@@ -9,9 +9,9 @@ setwd(dirname(getSourceEditorContext()$path))
 ###########
 # READ FILES
 
-fau <- "videoinfo_EhW-B2udhQw_2020_03_12-12_31_32_authors.tab"
-fbi <- "videoinfo_EhW-B2udhQw_2020_03_12-12_31_32_basicinfo.tab"
-fcm <- "videoinfo_EhW-B2udhQw_2020_03_12-12_31_32_comments.tab"
+fau <- "videoinfo_ZDK1aCqqZkQ_2020_03_12-10_42_16_authors.tab"
+fbi <- "videoinfo_ZDK1aCqqZkQ_2020_03_12-10_42_16_basicinfo.tab"
+fcm <- "videoinfo_ZDK1aCqqZkQ_2020_03_12-10_42_16_comments.tab"
 
 dfcomm <- fcm %>% read.table(sep = '\t', header = T, fill = T)
 dfbas <- fbi %>% read.table(sep = '\t', header = T)
@@ -44,4 +44,5 @@ wddfti %>%
 # 100 most frequent words
 top1000 <- read_file("text.txt")
 
-wddfti <- wddfti %>% filter(!grepl(top100, word))
+wddfti <- wddfti %>% filter(!grepl(top1000, word))
+
