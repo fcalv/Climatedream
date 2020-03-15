@@ -9,21 +9,24 @@ setwd(dirname(getSourceEditorContext()$path))
 # Disable text encoding as 'factors'
 options(stringsAsFactors = FALSE)
 
+# folder to use
+fold <- "Scraped GlobalWarming"
+
 # READ FILES
 
 ###########
 # COMMENTS
 
 # get list of comment files
-listfiles <- list.files("Scraped ClimateChange", pattern = "comments") %>% as.vector()
+listfiles <- list.files(fold, pattern = "comments") %>% as.vector()
 
-dfcomm <- paste("Scraped ClimateChange/",listfiles[1],sep = "") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
+dfcomm <- paste(fold,listfiles[1],sep = "/") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
 listfiles <- listfiles[-1]
 
 # iterate, read and append all files in "dfcm"
 for (val in listfiles) {
-  commtemp <- paste("Scraped ClimateChange/",val,sep = "") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
-  dfcomm <- rbind(dfcm,commtemp)
+  commtemp <- paste(fold,val,sep = "/") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
+  dfcomm <- rbind(dfcomm,commtemp)
   print(val)
 }
 
@@ -36,14 +39,14 @@ for (val in listfiles) {
 # COMMENT AUTHORS
 
 # get list of authors files
-listfiles <- list.files("Scraped ClimateChange", pattern = "authors") %>% as.vector()
+listfiles <- list.files(fold, pattern = "authors") %>% as.vector()
 
-dfauth <- paste("Scraped ClimateChange/",listfiles[1],sep = "") %>% read.table(sep = '\t', header = F, fill = T, quote = "")
+dfauth <- paste(fold,listfiles[1],sep = "/") %>% read.table(sep = '\t', header = F, fill = T, quote = "")
 listfiles <- listfiles[-1]
 
 # iterate, read and append all files in "dfauth"
 for (val in listfiles) {
-  authtemp <- paste("Scraped ClimateChange/",val,sep = "") %>% read.table(sep = '\t', header = F, fill = T, quote = "")
+  authtemp <- paste(fold,val,sep = "/") %>% read.table(sep = '\t', header = F, fill = T, quote = "")
   dfauth <- rbind(dfauth,authtemp)
   print(val)
 }
@@ -56,7 +59,7 @@ dfauth <- dfauth[order(-dfauth$Commnum),]
 
 # Top N comment authors file "TopN users commenting.csv"
 N <- 100
-dfauth %>% head(N) %>% write.csv("TopN users commenting.csv")
+dfauth %>% head(N) %>% write.csv(paste(fold,"TopN users commenting.csv",sep = "/"))
 
 ############
 
@@ -82,7 +85,7 @@ wddfti <- wddfti %>%
 # Frequent words, unfiltered
 
 wddfti %>%
-  write_csv("wordfreq.csv")
+  write_csv(paste(fold,"wordfreq.csv",sep = "/"))
 
 # 1000 most frequent words and single characters filtered out
 top1000 <- read_file("text.txt")
@@ -92,4 +95,4 @@ wddftif <- wddfti %>%
 
 # print filtered result
 wddftif %>%
-  write_csv("wordfreqfilter.csv")
+  write_csv(paste(fold,"wordfreqfilter.csv",sep = "/"))
