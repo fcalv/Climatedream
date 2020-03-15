@@ -10,7 +10,7 @@ setwd(dirname(getSourceEditorContext()$path))
 options(stringsAsFactors = FALSE)
 
 # folder to use
-fold <- "Scraped GlobalWarming"
+fold <- "Scraped ClimateChange"
 
 # READ FILES
 
