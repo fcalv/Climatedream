@@ -77,22 +77,50 @@ wddf <- dfcomm %>%
 
 wddfti <- wddf %>% unnest_tokens(word, text)
 
-# Word frequency
 
+# Anti join stop words
+
+data(stop_words)
+
+wddftif <- wddfti %>%
+  anti_join(stop_words)
+
+# Word frequency unfiltered
 wddfti <- wddfti %>%
   count(word, sort = T) 
 
-# Frequent words, unfiltered
-
+# print filtered result
 wddfti %>%
   write_csv(paste(fold,"wordfreq.csv",sep = "/"))
 
-# 1000 most frequent words and single characters filtered out
-top1000 <- read_file("text.txt")
-
-wddftif <- wddfti %>%
-  filter(!grepl(top1000, word))
+# Word frequency filtered
+wddftif <- wddftif %>%
+  count(word, sort = T) 
 
 # print filtered result
 wddftif %>%
   write_csv(paste(fold,"wordfreqfilter.csv",sep = "/"))
+
+############
+# Bigrams
+
+wddf_bigrams <- wddf %>%
+  unnest_tokens(bigram, text, token = "ngrams", n =2)
+
+wddf_bigrams %>%
+  count(bigram, sort = TRUE) %>%
+  write_csv(paste(fold,"bigrams.csv",sep = "/"))
+
+# Bigrams no stopwords
+
+wddf_bigrams_sep <- wddf_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+wddf_bigrams_fil <- wddf_bigrams_sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# save CSV
+wddf_bigrams_fil %>% 
+  count(word1, word2, sort = TRUE) %>%
+  write_csv(paste(fold,"bigramsfilter.csv",sep = "/"))
