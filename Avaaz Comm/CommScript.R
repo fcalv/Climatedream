@@ -2,7 +2,8 @@ library(rstudioapi)
 library(tidyverse)
 library(dplyr)
 library(tidytext)
-library(qdapDictionaries)
+library(igraph)
+library(ggraph)
 
 setwd(dirname(getSourceEditorContext()$path))
 
@@ -124,3 +125,41 @@ wddf_bigrams_fil <- wddf_bigrams_sep %>%
 wddf_bigrams_fil %>% 
   count(word1, word2, sort = TRUE) %>%
   write_csv(paste(fold,"bigramsfilter.csv",sep = "/"))
+
+
+########
+# PLOTS
+
+# word frequency filtered TOP 15
+N <- 15
+
+wddftif %>%
+  top_n(N) %>%
+ggplot(aes(reorder(word, n), n)) +
+  coord_flip() +
+  geom_col(fill = "dark red") +
+  theme(axis.title.y = element_blank()) +
+  ggtitle("TOP 15 words by frequency (stopwords filtered)")
+
+ggsave(paste(fold, "TOP15freq.jpg",sep = "/"), dpi = 300)
+
+# Bigram map
+N <- 400
+
+bigram_graph <- wddf_bigrams_fil %>%
+  count(word1, word2, sort = TRUE) %>%
+  filter(n > N) %>%
+  graph_from_data_frame()
+
+
+a <- grid::arrow(type = "closed", length = unit(.10, "inches"))
+
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.05, 'inches')) +
+  geom_node_point(color = "lightblue", size = 4) +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  theme_void()
+  
+ggsave(paste(fold, "TOPkeywords.jpg",sep = "/"), dpi = 300)
+
