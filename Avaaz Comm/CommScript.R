@@ -6,20 +6,62 @@ library(qdapDictionaries)
 
 setwd(dirname(getSourceEditorContext()$path))
 
-###########
+# Disable text encoding as 'factors'
+options(stringsAsFactors = FALSE)
+
 # READ FILES
 
-fau <- "videoinfo_ZDK1aCqqZkQ_2020_03_12-10_42_16_authors.tab"
-fbi <- "videoinfo_ZDK1aCqqZkQ_2020_03_12-10_42_16_basicinfo.tab"
-fcm <- "videoinfo_ZDK1aCqqZkQ_2020_03_12-10_42_16_comments.tab"
+###########
+# COMMENTS
 
-dfcomm <- fcm %>% read.table(sep = '\t', header = T, fill = T)
-dfbas <- fbi %>% read.table(sep = '\t', header = T)
-dfauth <- fau %>% read.table(sep = '\t', header = T)
+# get list of comment files
+listfiles <- list.files("Scraped ClimateChange", pattern = "comments") %>% as.vector()
+
+dfcomm <- paste("Scraped ClimateChange/",listfiles[1],sep = "") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
+listfiles <- listfiles[-1]
+
+# iterate, read and append all files in "dfcm"
+for (val in listfiles) {
+  commtemp <- paste("Scraped ClimateChange/",val,sep = "") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
+  dfcomm <- rbind(dfcm,commtemp)
+  print(val)
+}
+
+# DON'T RUN
+# print entire list of all comments in "commfull.csv"
+# commf %>% write.csv("commfull.csv")
+
+
+##############
+# COMMENT AUTHORS
+
+# get list of authors files
+listfiles <- list.files("Scraped ClimateChange", pattern = "authors") %>% as.vector()
+
+dfauth <- paste("Scraped ClimateChange/",listfiles[1],sep = "") %>% read.table(sep = '\t', header = F, fill = T, quote = "")
+listfiles <- listfiles[-1]
+
+# iterate, read and append all files in "dfauth"
+for (val in listfiles) {
+  authtemp <- paste("Scraped ClimateChange/",val,sep = "") %>% read.table(sep = '\t', header = F, fill = T, quote = "")
+  dfauth <- rbind(dfauth,authtemp)
+  print(val)
+}
+
+dfauth <- dfauth %>% rename("Author"="V1", "Commnum"="V2")
+
+# Summarize by comment author across all videos and order
+dfauth <- dfauth %>% group_by(Author) %>% summarise(Commnum = sum(Commnum))
+dfauth <- dfauth[order(-dfauth$Commnum),]
+
+# Top N comment authors file "TopN users commenting.csv"
+N <- 100
+dfauth %>% head(N) %>% write.csv("TopN users commenting.csv")
 
 ############
 
-# Word frequency
+############
+# Word frequency in comments
 
 # Cast data frame
 
@@ -37,12 +79,17 @@ wddfti <- wddf %>% unnest_tokens(word, text)
 wddfti <- wddfti %>%
   count(word, sort = T) 
 
+# Frequent words, unfiltered
 
 wddfti %>%
   write_csv("wordfreq.csv")
 
-# 100 most frequent words
+# 1000 most frequent words and single characters filtered out
 top1000 <- read_file("text.txt")
 
-wddfti <- wddfti %>% filter(!grepl(top1000, word))
+wddftif <- wddfti %>%
+  filter(!grepl(top1000, word))
 
+# print filtered result
+wddftif %>%
+  write_csv("wordfreqfilter.csv")
