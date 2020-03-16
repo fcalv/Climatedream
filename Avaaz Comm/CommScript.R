@@ -16,7 +16,7 @@ folder <- c("Scraped ClimateChange","Scraped ClimateManipulation","Scraped Globa
 # 1 = Climate Change
 # 2 = Climate Manipulation
 # 3 = Global Warming
-fold <- folder[2]
+fold <- folder[3]
 
 # READ FILES
 
