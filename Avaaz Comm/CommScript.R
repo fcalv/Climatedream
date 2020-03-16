@@ -16,7 +16,7 @@ folder <- c("Scraped ClimateChange","Scraped ClimateManipulation","Scraped Globa
 # 1 = Climate Change
 # 2 = Climate Manipulation
 # 3 = Global Warming
-fold <- folder[3]
+fold <- folder[2]
 
 # READ FILES
 
@@ -143,13 +143,14 @@ wddftif %>%
 ggplot(aes(reorder(word, n), n)) +
   coord_flip() +
   geom_col(fill = "dark red") +
+  theme_minimal() +
   theme(axis.title.y = element_blank()) +
-  ggtitle("TOP 15 words by frequency (stopwords filtered)")
+  ggtitle("TOP 15 words by frequency")
 
 ggsave(paste(fold, "TOP15freq.jpg",sep = "/"), dpi = 300)
 
 # Bigram map
-N <- 400
+N <- 300
 
 bigram_graph <- wddf_bigrams_fil %>%
   count(word1, word2, sort = TRUE) %>%
@@ -162,9 +163,71 @@ a <- grid::arrow(type = "closed", length = unit(.15, "inches"))
 ggraph(bigram_graph, layout = "fr") +
   geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
                  arrow = a, end_cap = circle(.03, 'inches')) +
-  geom_node_point(color = "lightblue", size = 4) +
+  geom_node_point(color = "lightpink", size = 4) +
   geom_node_text(aes(label = name), vjust = 0.4, hjust = 0.4) +
   theme_void()
   
 ggsave(paste(fold, "TOPkeywords.jpg",sep = "/"), dpi = 300, scale = 2)
+
+#################
+# Sentiment analysis
+
+# Saif Mohammad and Peter Turney, word count per sentiment
+nrc_sent <- get_sentiments("nrc") %>%
+  group_by(sentiment)
+
+
+wddf_sent_nrc <- wddf %>% 
+  unnest_tokens(word, text) %>%
+  inner_join(nrc_sent) %>%
+  count(sentiment, sort=TRUE)
+
+N <- 15
+wddf_sent_nrc %>%
+  top_n(N) %>%
+  ggplot(aes(reorder(sentiment,n),n)) +
+  geom_col(fill = "darkred") +
+  theme_minimal() +
+  theme(axis.title.y = element_blank()) +
+  ggtitle("NRC word count grouped by sentiment") + 
+    coord_flip()
+
+ggsave(paste(fold, "TOPSentiment NRC.jpg",sep = "/"), dpi = 300, scale = 2)
+
+# Bing top N count by sentiment
+
+bing_sent <- get_sentiments("bing")
+
+# count of positive and negative sentiment contribution
+
+wddf_sent_bing <- wddf %>% 
+  unnest_tokens(word, text) %>%
+  inner_join(bing_sent) %>%
+  group_by(sentiment) %>%
+  count(word, sort=TRUE)
+
+
+wddf_bing <- wddf %>% 
+  unnest_tokens(word, text) %>%
+  inner_join(get_sentiments("bing"), by = c(word = "word"))
+
+
+wddf_bing %>%
+  count(sentiment, word) %>%
+  ungroup() %>%
+  filter(n >= 1000) %>%
+  mutate(n = ifelse(sentiment == "negative", -n, n)) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  ylab("Contribution to sentiment") +
+  theme_minimal() +
+  coord_flip()
+
+ggsave(paste(fold, "Bing Sentiment.jpg",sep = "/"), dpi = 300, scale = 2)
+
+
+
+#################
+
 
