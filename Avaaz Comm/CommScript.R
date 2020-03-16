@@ -11,7 +11,12 @@ setwd(dirname(getSourceEditorContext()$path))
 options(stringsAsFactors = FALSE)
 
 # folder to use
-fold <- "Scraped ClimateChange"
+folder <- c("Scraped ClimateChange","Scraped ClimateManipulation","Scraped GlobalWarming")
+
+# 1 = Climate Change
+# 2 = Climate Manipulation
+# 3 = Global Warming
+fold <- folder[3]
 
 # READ FILES
 
@@ -152,14 +157,14 @@ bigram_graph <- wddf_bigrams_fil %>%
   graph_from_data_frame()
 
 
-a <- grid::arrow(type = "closed", length = unit(.10, "inches"))
+a <- grid::arrow(type = "closed", length = unit(.15, "inches"))
 
 ggraph(bigram_graph, layout = "fr") +
   geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
-                 arrow = a, end_cap = circle(.05, 'inches')) +
+                 arrow = a, end_cap = circle(.03, 'inches')) +
   geom_node_point(color = "lightblue", size = 4) +
-  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  geom_node_text(aes(label = name), vjust = 0.4, hjust = 0.4) +
   theme_void()
   
-ggsave(paste(fold, "TOPkeywords.jpg",sep = "/"), dpi = 300)
+ggsave(paste(fold, "TOPkeywords.jpg",sep = "/"), dpi = 300, scale = 2)
 
