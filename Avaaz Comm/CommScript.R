@@ -18,10 +18,11 @@ folder <- c("Scraped ClimateChange","Scraped ClimateManipulation","Scraped Globa
 # 3 = Global Warming
 fold <- folder[3]
 
-# READ FILES
+
 
 ###########
-# COMMENTS
+# READ FILES
+
 
 # get list of comment files
 listfiles <- list.files(fold, pattern = "comments") %>% as.vector()
@@ -40,9 +41,6 @@ for (val in listfiles) {
 # print entire list of all comments in "commfull.csv"
 # commf %>% write.csv("commfull.csv")
 
-
-##############
-# COMMENT AUTHORS
 
 # get list of authors files
 listfiles <- list.files(fold, pattern = "authors") %>% as.vector()
@@ -67,12 +65,11 @@ dfauth <- dfauth[order(-dfauth$Commnum),]
 N <- 100
 dfauth %>% head(N) %>% write.csv(paste(fold,"TopN users commenting.csv",sep = "/"))
 
-############
 
 ############
 # Word frequency in comments
 
-# Cast data frame
+# data frame
 
 wddf <- dfcomm %>%
   select(text) %>%
@@ -80,24 +77,24 @@ wddf <- dfcomm %>%
   mutate(text = as.character(text))
 
 # Tidy text
+wddfbycomm <- wddf %>% tibble(text = ., comnum = 1:nrow(wddf)) 
 
 wddfti <- wddf %>% unnest_tokens(word, text)
-
-
-# Anti join stop words
-
-data(stop_words)
-
-wddftif <- wddfti %>%
-  anti_join(stop_words)
 
 # Word frequency unfiltered
 wddfti <- wddfti %>%
   count(word, sort = T) 
 
-# print filtered result
+# print unfiltered result
 wddfti %>%
   write_csv(paste(fold,"wordfreq.csv",sep = "/"))
+
+
+# Anti join stop words see help(stop_words)
+data(stop_words)
+
+wddftif <- wddfti %>%
+  anti_join(stop_words)
 
 # Word frequency filtered
 wddftif <- wddftif %>%
@@ -130,6 +127,13 @@ wddf_bigrams_fil <- wddf_bigrams_sep %>%
 wddf_bigrams_fil %>% 
   count(word1, word2, sort = TRUE) %>%
   write_csv(paste(fold,"bigramsfilter.csv",sep = "/"))
+
+# To TRY !!!
+# tf_idf
+
+# book_words <- wddfbycomm %>%
+#   unnest_tokens(word, text) %>%
+#   count(commnum, word, sort = TRUE)
 
 
 ########
