@@ -1,0 +1,137 @@
+#####################################
+# ENVIRONMENT
+#####################################
+# Set the working environment
+library(rstudioapi)
+setwd(dirname(getSourceEditorContext()$path))
+
+# Get essential libraries
+library(tidyverse)
+
+# Disable text encoding as 'factors'
+options(stringsAsFactors = FALSE)
+
+#####################################
+# READ & CLEAN DATA
+#####################################
+# Data source: CSB
+# https://opendata.cbs.nl/statline/#/CBS/en/dataset/83154ENG/table?ts=1583359705077
+
+data <- read.csv2('Environmental_sector__activities_04032020_231238.csv')
+data %>% glimpse
+
+
+# Let's use short column names
+colnames(data)
+col_description <- colnames(data)
+
+colnames(data) <- c('domain', 'activity', 'year', 'labour', 'output', 'value_added')
+data %>% glimpse
+
+
+# The first column always has the same value, thus we drop it
+data$domain %>% unique
+data <- data %>% select(-domain)
+data %>% glimpse
+
+
+# Let's transform labour values into numbers
+data <- data %>% 
+  mutate(labour = as.numeric(labour)) 
+
+# Let's transform the years into numbers too
+data <- data %>%
+  mutate(year = gsub('\\*', '', year)) %>%
+  mutate(year = as.numeric(year))
+
+data %>% glimpse
+
+
+#####################################
+# (Very) BASIC VISUALIZATION
+#####################################
+
+# Select the activity
+list_activity <- data %>%
+  select(activity) %>% 
+  pull %>%
+  unique
+print(list_activity)
+
+data_total <- data %>%
+  filter(activity == list_activity[1])
+
+
+
+# Let's see what we got!
+data_total %>%
+  ggplot( aes(x=year, y=labour) ) +
+  geom_col()
+
+# It looks different this way...
+data_total %>%
+  ggplot( aes(year, labour) ) +
+  geom_line()
+
+
+
+# What about other variables?
+data_total %>%
+  ggplot( aes(year, output) ) +
+  geom_line()
+
+# What about other variables?
+data_total %>%
+  ggplot( aes(year, value_added) ) +
+  geom_line()
+
+#####################################
+# (Slightly less) BASIC VISUALIZATION
+#####################################
+
+# Can we see all variables together?
+data_total %>%
+  ggplot( aes(x=year) ) +
+  geom_line(aes(y=labour)) +
+  geom_line(aes(y=output), color='red') +
+  geom_line(aes(y=value_added), color='green')
+
+# Let's use a different unit for labour
+# It was 1000 year of full time employment...
+# Let's make it a 10 year unit
+data_total %>%
+  # We just need to add this line:
+  mutate(labour = labour * 100) %>%
+  # Et voila!
+  ggplot( aes(x=year) ) +
+  geom_line(aes(y=labour)) +
+  geom_line(aes(y=output), color='red') +
+  geom_line(aes(y=value_added), color='green')
+
+# Well we also need legends...
+data_total %>%
+  mutate(labour = labour * 100) %>%
+  ggplot( aes(x=year) ) +
+  geom_line(aes(y=labour)) +
+  geom_line(aes(y=output), color='red') +
+  geom_line(aes(y=value_added), color='green') +
+  # Here we can add text to the plot:
+  ggtitle('Black: Labout (10-year of fte)\nRed: Output (mln. euros)\nGreen: Value added (mln. euros)')
+
+
+
+#####################################
+# BASIC VISUALIZATION
+#####################################
+
+# ...Let's check employment accross activities
+data %>%
+  filter(activity != list_activity[1]) %>%
+  ggplot( aes(x=year, y=labour, color=activity) ) +
+  geom_line()
+
+# That looks already quite interesting !
+# Enough for today? :)  
+
+
+

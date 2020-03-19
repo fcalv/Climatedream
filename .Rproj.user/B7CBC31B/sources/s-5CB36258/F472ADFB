@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1583486236340.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F472ADFB",
+    "lastKnownWriteTime" : 1583486234,
+    "last_content_update" : 1583486234,
+    "path" : "C:/Users/Razer/Downloads/Practice_1.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "54,0",
+        "scrollLine" : "43"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
