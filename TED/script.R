@@ -12,15 +12,31 @@ setwd(dirname(getSourceEditorContext()$path))
 # Disable text encoding as 'factors'
 options(stringsAsFactors = FALSE)
 
-# URL of the playlist
-# "https://www.ted.com/playlists/78/climate_change_oh_it_s_real"
-# "https://www.ted.com/playlists/126/the_big_picture"
-# "https://www.ted.com/playlists/154/how_do_you_solve_a_problem_lik"
+# URL of the playlists
+#"https://www.ted.com/playlists/126/the_big_picture",
+#"https://www.ted.com/playlists/78/climate_change_oh_it_s_real",
+#"https://www.ted.com/playlists/154/how_do_you_solve_a_problem_lik",
+#"https://www.ted.com/playlists/493/why_climate_change_is_a_human",
+#"https://www.ted.com/playlists/634/a_day_trip_to_antarctica",
+#"https://www.ted.com/playlists/439/what_is_the_anthropocene",
+#"https://www.ted.com/playlists/151/earth_appreciated",
+#"https://www.ted.com/playlists/142/the_forecast_calls_for"
 
-playlisturl <- "https://www.ted.com/playlists/126/the_big_picture"
+playlisturl <- c("https://www.ted.com/playlists/126/the_big_picture",
+                 "https://www.ted.com/playlists/78/climate_change_oh_it_s_real",
+                 "https://www.ted.com/playlists/154/how_do_you_solve_a_problem_lik",
+                 "https://www.ted.com/playlists/493/why_climate_change_is_a_human",
+                 "https://www.ted.com/playlists/634/a_day_trip_to_antarctica",
+                 "https://www.ted.com/playlists/439/what_is_the_anthropocene",
+                 "https://www.ted.com/playlists/151/earth_appreciated",
+                 "https://www.ted.com/playlists/142/the_forecast_calls_for")
 
-htmlpage <- playlisturl %>% read_html()
-htmlpage %>% write_html("playlist.html")
+fulllist <- vector()
+
+for (val in 1:length(playlisturl)) {
+  
+htmlpage <- playlisturl[val] %>% read_html()
+htmlpage %>% write_html(paste("playlist", as.character(val),".html",sep = ""))
 
 # scrape list of videos from playlist
 videolist <- htmlpage %>% html_nodes('body') %>%
@@ -34,9 +50,13 @@ videolist <- videolist[grep(x = videolist, pattern = '/talks/')]
 videolist <- videolist[-1]
 videolist <- paste('https://www.ted.com/', videolist, '/transcript', sep = "")
 
-trnslist <- vector()
+fulllist <- append(fulllist,videolist)
+}
 
-for (val in videolist) {
+fulllist <- unique(fulllist)
+
+trnslist <- vector()
+for (val in fulllist) {
   temp <- val %>% transcriptTED()
   
   trnslist <- trnslist %>% list.append(temp)

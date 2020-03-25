@@ -25,14 +25,24 @@ fold <- folder[3]
 
 
 # get list of comment files
-listfiles <- list.files(fold, pattern = "comments") %>% as.vector()
+listfiles <- list.files(fold, pattern = "comments") %>%
+  as.vector()
 
-dfcomm <- paste(fold,listfiles[1],sep = "/") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
+videoid <- strsplit(listfiles, split = "_")
+
+dfcomm <- paste(fold,listfiles[1],sep = "/") %>%
+  read.table(sep = '\t', header = T, fill = T, quote = "") %>%
+  cbind(video = videoid[[1]][2])
+
 listfiles <- listfiles[-1]
+videoid <- videoid[-1]
 
 # iterate, read and append all files in "dfcm"
-for (val in listfiles) {
-  commtemp <- paste(fold,val,sep = "/") %>% read.table(sep = '\t', header = T, fill = T, quote = "")
+for (val in 1:length(listfiles)) {
+  commtemp <- paste(fold,listfiles[val],sep = "/") %>% 
+    read.table(sep = '\t', header = T, fill = T, quote = "") %>%
+    cbind(video = videoid[[val]][2])
+  
   dfcomm <- rbind(dfcomm,commtemp)
   print(val)
 }
@@ -72,7 +82,7 @@ dfauth %>% head(N) %>% write.csv(paste(fold,"TopN users commenting.csv",sep = "/
 # data frame
 
 wddf <- dfcomm %>%
-  select(text) %>%
+  select(text, video) %>%
   as.data.frame() %>%
   mutate(text = as.character(text))
 
@@ -131,9 +141,6 @@ wddf_bigrams_fil %>%
 # To TRY !!!
 # tf_idf
 
-# book_words <- wddfbycomm %>%
-#   unnest_tokens(word, text) %>%
-#   count(commnum, word, sort = TRUE)
 
 
 ########
