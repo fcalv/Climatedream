@@ -34,12 +34,12 @@ dfcomm <- paste(fold,listfiles[1],sep = "/") %>%
   read.table(sep = '\t', header = T, fill = T, quote = "") %>%
   cbind(video = videoid[[1]][2])
 
-listfiles <- listfiles[-1]
+listfilest <- listfiles[-1]
 videoid <- videoid[-1]
 
 # iterate, read and append all files in "dfcm"
-for (val in 1:length(listfiles)) {
-  commtemp <- paste(fold,listfiles[val],sep = "/") %>% 
+for (val in 1:length(listfilest)) {
+  commtemp <- paste(fold,listfilest[val],sep = "/") %>% 
     read.table(sep = '\t', header = T, fill = T, quote = "") %>%
     cbind(video = videoid[[val]][2])
   
