@@ -6,7 +6,7 @@ library(tidyverse)
 library(rvest)
 
 #driver <- rsDriver(browser = c("firefox"), port=5555L)
-driver <- rsDriver(browser = c("chrome"), port=5556L, chromever="80.0.3987.16")
+driver <- rsDriver(browser = c("chrome"), port=5546L, chromever="80.0.3987.16")
 
 remote_driver <- driver[["client"]] 
 remote_driver$navigate("https://www.youtube.com/")
@@ -89,12 +89,14 @@ test_scrape <- function(){
     xml_attr('title')
   
   #get all reccomended video thumbnails
-  thumbs <<- html %>%
+  thumbs_loc <- html %>%
     html_nodes('img') %>%
     html_attr('data-thumb')
   
+  thumbs_loc[!is.na(thumbs_loc)]
+  
   #collapse list of thumbnails
-  thumbs <<- paste(thumbs, collapse = ';')
+  thumbs <<- paste(thumbs_loc, collapse = ';')
   
   #get all links
   links <<- html %>%
