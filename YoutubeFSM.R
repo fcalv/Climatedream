@@ -226,7 +226,9 @@ metadata <- data.frame(Keyword = character(), Title = character(), Channel = cha
 
 remote_driver$deleteAllCookies()
 
-for (row in 15:nrow(Top100GlobalWarming)){
+timer <- Sys.time()
+
+for (row in 1:nrow(Top100GlobalWarming)){
   
   #refresh youtube and clear all cookies
   remote_driver$navigate("https://www.youtube.com/")
@@ -234,7 +236,7 @@ for (row in 15:nrow(Top100GlobalWarming)){
   Sys.sleep(1)
   
   statement <- Top100GlobalWarming$bigram[row]
-  #get YouTube search bar reference, send text(keyword) to it and simulate pressing enter
+  # get YouTube search bar reference, send text(keyword) to it and simulate pressing enter
   address_element <- remote_driver$findElement(using = 'xpath', value = '/html/body/ytd-app/div/div/ytd-masthead/div[3]/ytd-searchbox/form/div/div[1]/input')
   address_element$sendKeysToElement(list(statement, key = "enter"))#first keyword
   
@@ -346,8 +348,15 @@ for (row in 15:nrow(Top100GlobalWarming)){
       test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/ytd-mealbar-promo-renderer/div/div[2]/ytd-button-renderer[1]/a/paper-button")
       test_element$clickElement() 
     } 
-    }
+  }
+  
+  # break condition after 6 hours
+  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6 ) {
+    break
   }
 
+}
 
-
+print("Timer has expired")
+# save metadata
+metadata %>% write.table(paste("Metadata/",metadata$Keyword[1],"_",metadata$Keyword[nrow(metadata)],".txt"))
