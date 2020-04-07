@@ -1,0 +1,342 @@
+#####################################
+# ENVIRONMENT
+#####################################
+library(rstudioapi)
+setwd(dirname(getSourceEditorContext()$path))
+
+library(tidyverse)
+library(rvest)
+library(pracma)
+library(webdriver)
+library(RSelenium)
+library(XML)
+library(jsonlite)
+# webdriver::install_phantomjs()
+
+#####################################
+# SCRAPE FUNCTION
+#####################################
+
+scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
+  
+  ##### CURRENT VIDEO DATA #####
+  url <- html %>% html_nodes('link[rel="shortlink"]') %>% html_attr('content')
+  video_id <- gsub('^http.*watch.v=','',url)
+  
+  title <- html %>% html_nodes('meta[name=title]') %>% html_attr('content')
+  title <- gsub('\t','',title)
+  
+  description <- html %>% html_nodes('meta[name=description]') %>% html_attr('content')
+  description <- gsub('\t','',description)
+  
+  keywords <- html %>% html_nodes('meta[name=keywords]') %>% html_attr('content')
+  keywords <- gsub('\t','',keywords)
+  keywords <- gsub(',', ';', keywords)
+  
+  image <- html %>% html_nodes('meta[property="og:image"]') %>% html_attr('content')
+  type <- html %>% html_nodes('meta[property="og:type"]') %>% html_attr('content')
+   
+  paid <- html %>% html_nodes('meta[itemprop="paid"]') %>% html_attr('content')
+  channel_id <- html %>% html_nodes('meta[itemprop="channelId"]') %>% html_attr('content')
+  # video_id <- html %>% html_nodes('meta[itemprop="videoId"]') %>% html_attr('content')
+  duration <- html %>% html_nodes('meta[itemprop="duration"]') %>% html_attr('content')
+  unlisted <- html %>% html_nodes('meta[itemprop="unlisted"]') %>% html_attr('content')
+  family <- html %>% html_nodes('meta[itemprop="isFamilyFriendly"]') %>% html_attr('content')
+  
+  regions <- html %>% html_nodes('meta[itemprop="regionsAllowed"]') %>% html_attr('content')
+  regions <- gsub(',', ';', regions)
+  
+  views <- html %>% html_nodes('meta[itemprop="interactionCount"]') %>% html_attr('content')
+  date_publication <- html %>% html_nodes('meta[itemprop="datePublished"]') %>% html_attr('content')
+  date_upload <- html %>% html_nodes('meta[itemprop="uploadDate"]') %>% html_attr('content')
+  
+  genre <- html %>% html_nodes('meta[itemprop="genre"]') %>% html_attr('content')
+  genre <- gsub(',', ';', genre)
+   
+  #### JSON + LIKE / DISLIKE #### 
+  txt <- readLines(html_src)
+  
+  likes <- c()
+  dislikes <- c()
+  
+  for(i in 1:length(txt)){
+    line <- txt[i]
+    temp <- str_extract(line, '[^s]likeCount.?.?.?[0-9 ,]*')
+    if(!is.na(temp)) {
+      likes <- c(likes, temp)
+      temp <- str_extract(line, 'dislikeCount.?.?.?[0-9 ,]*')
+      if(!is.na(temp)) dislikes <- c(dislikes, temp)
+      
+      json <- gsub("^ *'RELATED_PLAYER_ARGS': *|,$", '', line) 
+      json <- json %>% fromJSON
+      
+      watch_next <- json$watch_next_response
+      watch_next <- watch_next %>% fromJSON
+      watch_next %>% write_json( gsub('csv$','json$',csv_file) )
+      
+      watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
+    }
+  }
+  likes <- gsub('[^0-9]', '', sort(likes, decreasing=TRUE)[1])
+  dislikes <- gsub('[^0-9]', '', sort(dislikes, decreasing=TRUE)[1])
+  
+  
+  ##### AUTOPLAY DATA #####
+  next_playlist_id <- watch_next$compactRadioRenderer$playlistId
+  next_playlist_id <- next_playlist_id[!is.na(next_playlist_id)]
+  
+  next_video_url <- watch_next$compactRadioRenderer$shareUrl
+  next_video_url <- next_video_url[!is.na(next_video_url)]
+  
+  next_video_id <- str_extract(next_video_url, 'watch.v=[0-9a-zA-Z]*')
+  next_video_id <- gsub('^watch|v=|[^0-9a-zA-Z]','',next_video_id)
+   
+  ##### RECOMMENDATION DATA #####
+  # Alternative: watch_next$compactVideoRenderer$navigationEndpoint$watchEndpoint$videoId[3:20] %>% glimpse
+  
+  reco_videos_id <- watch_next$compactVideoRenderer$videoId[3:20]
+  reco_urls <- paste0('https://www.youtube.com/watch?v=', reco_videos_id)
+  reco_videos_id <- paste(reco_videos_id, collapse=' ; ')
+  reco_urls <- paste(reco_urls, collapse=' ; ')
+  
+  reco_titles <- watch_next$compactVideoRenderer$title$simpleText[3:20]
+  reco_titles <- gsub('\t','',reco_titles)
+  reco_titles <- paste(reco_titles, collapse=' ; ')
+  
+  # About channel ID & user ID, these urls are equivalent:
+  # User page: https://www.youtube.com/user/sasori6282 
+  # Channel page: https://www.youtube.com/channel/UCWvTi6jwfaDd9fGBFy9E_5g
+  reco_channels <- watch_next$compactVideoRenderer$longBylineText$runs
+  reco_channels_name <- reco_channels_id <- c()
+  for(i in 3:20){
+    reco_channels_name <- c(reco_channels[[i]]$text, reco_channels_name)
+    reco_channels_id <- c(reco_channels[[i]]$navigationEndpoint.browseEndpoint.browseId, reco_channels_id)
+  }
+  reco_channels_name <- gsub('\t','',reco_channels_name)
+  reco_channels_name <- paste(reco_channels_name, collapse=' ; ')
+  reco_channels_id <- paste(reco_channels_id, collapse=' ; ')
+  
+  reco_whys <- watch_next$compactVideoRenderer$viewCountText$simpleText[3:20]
+  reco_whys <- paste(reco_whys, collapse=' ; ')
+  
+  reco_durations <- watch_next$compactVideoRenderer$lengthText$simpleText[3:20]
+  for(i in 1:18){
+    temp <- reco_durations[i] %>% str_split(':') %>% unlist %>% as.numeric %>% rev 
+    duration <- 0
+    for(k in 1:length(temp)){
+      duration <- duration + temp[k]*60^(k-1)
+    }
+    reco_durations[i] <- duration
+  }
+  reco_durations <- paste(reco_durations, collapse=' ; ')
+  
+  reco_thumbnails <- watch_next$compactVideoRenderer$channelThumbnail$thumbnails %>% 
+    unlist()  %>% as.character() 
+  reco_thumbnails <- reco_thumbnail[ (1:length(reco_thumbnail)) %% 3 == 1 ]
+  reco_thumbnails <- paste(reco_thumbnail, collapse=' ; ')
+  
+  
+  reco_snippets <- watch_next$compactVideoRenderer$accessibility$accessibilityData$label[3:20]
+  reco_snippets <- gsub('\t','',reco_snippets)
+  reco_snippets <- paste(reco_snippets, collapse=' ; ')
+  
+  reco_ages_year <- watch_next$compactVideoRenderer$publishedTimeText$simpleText[3:20]
+  reco_ages_year[is.na(reco_ages_year)] <- 0
+  reco_ages_year <- gsub('[^0-9]','',reco_ages_year) %>% as.numeric
+  reco_ages_year <- paste(reco_ages_year, collapse=' ; ')
+  
+  badges <- watch_next$compactVideoRenderer$ownerBadges
+  reco_badges <- c()
+  for(i in 3:20) {
+    temp <- badges[[i]]  %>% unlist %>% as.character
+    if(length(temp) == 0) temp <- ''
+    reco_badges <- c(reco_badges,  temp)
+  }
+  reco_badges <- paste(reco_badges, collapse=' ; ')
+  
+  
+  ##### WRITE DATA #####
+  line_data <- c(keyword_ref, iteration,
+            video_id, url, title, description, keywords, image, type, paid, channel_id,
+            duration, unlisted, family, regions, views, date_publication, date_upload, genre,
+            likes, dislikes, next_video_id, next_video_url, next_playlist_id,
+            reco_videos_id, reco_urls, reco_titles, reco_channels_id, reco_channels_name,
+            reco_whys, reco_durations, reco_thumbnails, reco_snippets,
+            reco_ages_year, reco_badges
+           ) 
+  line_data <- line_data %>% as.character() %>% paste0(collapse='\t')
+  
+  write(line_data, csv_file, append=TRUE)
+
+}
+
+#####################################
+# SELENIUM
+#####################################
+# Find port by running run_phantomjs()
+# driver <- rsDriver(browser = c("firefox"), port=port$port) #version 74.0.1
+# remote_driver$close()
+# driver$server$stop()
+
+# to check current version chrome://version/
+port <- run_phantomjs()
+driver <- rsDriver(browser = c("chrome"), port=port$port, chromever="80.0.3987.106")
+
+remote_driver <- driver[["client"]] 
+
+#####################################
+# KEYWORDS
+#####################################
+
+Top100GlobalWarming <- read.csv("Top100GlobalWarming.csv", header=TRUE, sep=";") %>%
+  unite(bigram, word1, word2, sep = " ")
+
+timer <- Sys.time()
+
+#####################################
+# SCRAPE IN ACTION
+#####################################
+
+### INIT CSV RESULTS
+csv_header <- c("keyword_ref", " iteration", 
+                "video_id", " url", " title", " description", " keywords", " image", " type", " paid", " channel_id", 
+                "duration", " unlisted", " family", " regions", " views", " date_publication", " date_upload", " genre", 
+                "likes", " dislikes", " next_video_id", " next_video_url", " next_playlist_id", 
+                "reco_videos_id", " reco_urls", " reco_titles", " reco_channels_id", " reco_channels_name", 
+                "reco_whys", " reco_durations", " reco_thumbnails", " reco_snippets", 
+                "reco_ages_year", " reco_badges") %>% paste0(collapse='\t')
+csv_file <- paste0('results/scrape_results_',gsub(' ','_',Sys.time()),'.tsv')
+write(csv_header, csv_file)
+
+### TRY KEYWORDS
+for (row in 1:5){
+  
+  #refresh youtube and clear all cookies
+  remote_driver$navigate("https://www.youtube.com/")
+  remote_driver$deleteAllCookies()
+  remote_driver$navigate("https://www.youtube.com/")
+  Sys.sleep(1)
+  
+  ##### RECORD HTML #####
+  # remote_driver$switchToFrame(NULL)
+  src <- XML::htmlParse(remote_driver$getPageSource()[[1]])
+  saveXML(src, paste0('results/scrape_html_',gsub(' ','-',statement),'_HOME_',gsub('[^0-9]','_',Sys.time()),'.html') )
+  
+  ##### SEARCH WITH KEYWORDS #####
+  statement <- Top100GlobalWarming$bigram[row]
+  paste('KEYWORD:', statement) %>% print
+  
+  # get YouTube search bar reference, send text(keyword) to it and simulate pressing enter
+  address_element <- remote_driver$findElement(using = "name", value = "search_query")
+  address_element$sendKeysToElement(list(statement, key = "enter")) 
+  Sys.sleep(2)
+
+  ##### RECORD HTML #####
+  # remote_driver$switchToFrame(NULL)
+  src <- XML::htmlParse(remote_driver$getPageSource()[[1]])
+  saveXML(src, paste0('results/scrape_html_',gsub(' ','-',statement),'_SEARCH_',gsub('[^0-9]','_',Sys.time()),'.html') )
+  
+  ##### CLICK ON 1st RECOMMENDATION #####
+  remote_driver$findElement(using = "css", "a[rel=spf-prefetch]")$clickElement()
+  Sys.sleep(1)
+  
+  n_scrape = 3
+  for(count in 1:n_scrape){ 
+    paste('Iteration', count) %>% print
+    ##### RECORD HTML #####
+    # remote_driver$switchToFrame(NULL)
+    src <- XML::htmlParse(remote_driver$getPageSource()[[1]])
+    src_file <- paste0('results/scrape_html_',gsub(' ','-',statement),'_',count,'_',gsub('[^0-9]','_',Sys.time()),'.html')
+    saveXML(src, src_file)
+    
+    ##### BROWSE (deprecated) #####
+    # # Scroll down to read more
+    # remote_driver$executeScript("return document.querySelector('#container').scrollIntoView(true)")
+    # # Element for scrolling later
+    # webElem <- remote_driver$findElement("css", "body")
+    # # Click show more
+    # show_more <- remote_driver$findElement(using = 'xpath', value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[1]/div/div[7]/div[3]/ytd-video-secondary-info-renderer/div/ytd-expander/paper-button[2]")
+    # show_more$clickElement()
+    # # Go back up
+    # webElem$sendKeysToElement(list(key = "home"))
+    
+    ##### SCRAPE #####
+    # fetch html from current remote_driver url
+    html <- read_html(src_file)
+    
+    #scrape results of first keyword data
+    scrape_page(html, csv_file, statement, count, src_file)
+    
+    ##### WATCH #####
+    # Timeout for (very) long videos and live streams (stop watching after N seconds), for now 1h
+    tic(gcFirst = T)
+    N <- 3600
+    
+    # watch the video until the end / timer expiry
+    state <- remote_driver$executeScript("return document.getElementById('movie_player').getPlayerState()")
+    
+    while( (state != 0) & (toc(echo = F) <= N)){
+      state <- remote_driver$executeScript("return document.getElementById('movie_player').getPlayerState()")
+    
+      # sign-in pop-up close
+      test_element <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/iron-dropdown/div/yt-tooltip-renderer/div[2]/div[1]/yt-button-renderer/a/paper-button/yt-formatted-string")
+      if (length(test_element) == 1) {
+        test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/iron-dropdown/div/yt-tooltip-renderer/div[2]/div[1]/yt-button-renderer/a/paper-button/yt-formatted-string")
+        test_element$clickElement() 
+      }
+      
+      # close youtube premium ad (if it's in there)
+      test_element <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/ytd-mealbar-promo-renderer/div/div[2]/ytd-button-renderer[1]/a/paper-button")
+      if (length(test_element) == 1) {
+        test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/ytd-mealbar-promo-renderer/div/div[2]/ytd-button-renderer[1]/a/paper-button")
+        test_element$clickElement() 
+      } 
+      
+      # close are you still watching
+      test_element <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/yt-confirm-dialog-renderer/div[2]/div/yt-button-renderer[2]/a/paper-button/paper-ripple")
+      if (length(test_element) == 1) {
+        test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/yt-confirm-dialog-renderer/div[2]/div/yt-button-renderer[2]/a/paper-button/paper-ripple")
+        test_element$clickElement() 
+      }
+    }
+    
+    
+    ##### NEXT VIDEO #####
+    #click on next recommended video
+    if(count != n_scrape){
+      remote_driver$findElement(using = "xpath", value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[2]/div/div[3]/ytd-watch-next-secondary-results-renderer/div[2]/ytd-compact-autoplay-renderer/div[2]/ytd-compact-video-renderer/div[1]/ytd-thumbnail/a")$clickElement()
+      Sys.sleep(2)
+    }
+  }
+
+  # break condition after 6 hours
+  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6 ) {
+    print("Timer has expired")
+    break
+  }
+
+}
+
+
+
+
+#####################################
+# CRUMBS
+#####################################
+
+# n <- html %>% html_nodes('meta')
+# n <- html %>% html_nodes('link')
+# for(node in n){
+#   print(node)
+# }
+# 
+# rvs <- json$rvs
+# rvs <- gsub('&','\n', rvs) 
+# rvs <- gsub('=','; ', rvs) 
+# write(rvs, 'temp.csv')
+# rvs <- read.csv2('temp.csv', header=FALSE)
+# rvs$V2 %>% sort
+# rvs %>% spread(V1, V2) %>% glimpse
+
+
+#####################################
