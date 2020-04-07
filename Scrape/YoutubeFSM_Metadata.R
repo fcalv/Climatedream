@@ -20,7 +20,7 @@ library(jsonlite)
 scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   
   ##### CURRENT VIDEO DATA #####
-  url <- html %>% html_nodes('link[rel="shortlink"]') %>% html_attr('content')
+  url <- html %>% html_nodes('link[rel="canonical"]') %>% html_attr('href')
   video_id <- gsub('^http.*watch.v=','',url)
   
   title <- html %>% html_nodes('meta[name=title]') %>% html_attr('content')
@@ -72,28 +72,24 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
       
       watch_next <- json$watch_next_response
       watch_next <- watch_next %>% fromJSON
-      watch_next %>% write_json( gsub('csv$','json$',csv_file) )
+      watch_next %>% write_json( gsub('[^a-z][a-z]*$','.json',html_src) )
       
-      watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
+      break
     }
   }
   likes <- gsub('[^0-9]', '', sort(likes, decreasing=TRUE)[1])
   dislikes <- gsub('[^0-9]', '', sort(dislikes, decreasing=TRUE)[1])
   
+  # more_details <- watch_next$contents$twoColumnWatchNextResults$results$results$contents$itemSectionRenderer$contents
   
   ##### AUTOPLAY DATA #####
-  next_playlist_id <- watch_next$compactRadioRenderer$playlistId
-  next_playlist_id <- next_playlist_id[!is.na(next_playlist_id)]
+  next_video_id <- watch_next$contents$twoColumnWatchNextResults$autoplay$autoplay$sets$autoplayVideo$watchEndpoint$videoId
+  next_video_url <- paste0('https://www.youtube.com/watch?v=', next_video_id)
   
-  next_video_url <- watch_next$compactRadioRenderer$shareUrl
-  next_video_url <- next_video_url[!is.na(next_video_url)]
-  
-  next_video_id <- str_extract(next_video_url, 'watch.v=[0-9a-zA-Z]*')
-  next_video_id <- gsub('^watch|v=|[^0-9a-zA-Z]','',next_video_id)
-   
   ##### RECOMMENDATION DATA #####
   # Alternative: watch_next$compactVideoRenderer$navigationEndpoint$watchEndpoint$videoId[3:20] %>% glimpse
   
+  watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
   reco_videos_id <- watch_next$compactVideoRenderer$videoId[3:20]
   reco_urls <- paste0('https://www.youtube.com/watch?v=', reco_videos_id)
   reco_videos_id <- paste(reco_videos_id, collapse=' ; ')
@@ -132,8 +128,8 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   
   reco_thumbnails <- watch_next$compactVideoRenderer$channelThumbnail$thumbnails %>% 
     unlist()  %>% as.character() 
-  reco_thumbnails <- reco_thumbnail[ (1:length(reco_thumbnail)) %% 3 == 1 ]
-  reco_thumbnails <- paste(reco_thumbnail, collapse=' ; ')
+  reco_thumbnails <- reco_thumbnails[ (1:length(reco_thumbnails)) %% 3 == 1 ]
+  reco_thumbnails <- paste(reco_thumbnails, collapse=' ; ')
   
   
   reco_snippets <- watch_next$compactVideoRenderer$accessibility$accessibilityData$label[3:20]
@@ -159,7 +155,7 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   line_data <- c(keyword_ref, iteration,
             video_id, url, title, description, keywords, image, type, paid, channel_id,
             duration, unlisted, family, regions, views, date_publication, date_upload, genre,
-            likes, dislikes, next_video_id, next_video_url, next_playlist_id,
+            likes, dislikes, next_video_id, next_video_url, 
             reco_videos_id, reco_urls, reco_titles, reco_channels_id, reco_channels_name,
             reco_whys, reco_durations, reco_thumbnails, reco_snippets,
             reco_ages_year, reco_badges
@@ -168,18 +164,20 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   
   write(line_data, csv_file, append=TRUE)
 
+  return(next_video_id)
 }
 
 #####################################
 # SELENIUM
 #####################################
 # Find port by running run_phantomjs()
+port <- run_phantomjs()
+
 # driver <- rsDriver(browser = c("firefox"), port=port$port) #version 74.0.1
 # remote_driver$close()
 # driver$server$stop()
 
 # to check current version chrome://version/
-port <- run_phantomjs()
 driver <- rsDriver(browser = c("chrome"), port=port$port, chromever="80.0.3987.106")
 
 remote_driver <- driver[["client"]] 
@@ -197,25 +195,30 @@ timer <- Sys.time()
 # SCRAPE IN ACTION
 #####################################
 
-### INIT CSV RESULTS
-csv_header <- c("keyword_ref", " iteration", 
-                "video_id", " url", " title", " description", " keywords", " image", " type", " paid", " channel_id", 
-                "duration", " unlisted", " family", " regions", " views", " date_publication", " date_upload", " genre", 
-                "likes", " dislikes", " next_video_id", " next_video_url", " next_playlist_id", 
-                "reco_videos_id", " reco_urls", " reco_titles", " reco_channels_id", " reco_channels_name", 
-                "reco_whys", " reco_durations", " reco_thumbnails", " reco_snippets", 
+##### INIT CSV RESULT S####
+csv_header <- c("keyword_ref", "iteration", 
+                "video_id", "url", "title", "description", "keywords", "image", "type", "paid", "channel_id", 
+                "duration", "unlisted", "family", "regions", "views", "date_publication", "date_upload", "genre", 
+                "likes", "dislikes", "next_video_id", "next_video_url", 
+                "reco_videos_id", "reco_urls", "reco_titles", "reco_channels_id", "reco_channels_name", 
+                "reco_whys", "reco_durations", "reco_thumbnails", "reco_snippets", 
                 "reco_ages_year", " reco_badges") %>% paste0(collapse='\t')
-csv_file <- paste0('results/scrape_results_',gsub(' ','_',Sys.time()),'.tsv')
+csv_file <- paste0('results/scrape_results_',gsub('[^0-9]','_',Sys.time()),'.tsv')
 write(csv_header, csv_file)
 
-### TRY KEYWORDS
+##### TRY KEYWORDS ##### 
 for (row in 1:5){
   
-  #refresh youtube and clear all cookies
+  ##### Init #####
+  # Refresh youtube and clear all cookies
   remote_driver$navigate("https://www.youtube.com/")
   remote_driver$deleteAllCookies()
   remote_driver$navigate("https://www.youtube.com/")
   Sys.sleep(1)
+  
+  # Get keywords
+  statement <- Top100GlobalWarming$bigram[row]
+  paste('KEYWORD:', statement) %>% print
   
   ##### RECORD HTML #####
   # remote_driver$switchToFrame(NULL)
@@ -223,8 +226,6 @@ for (row in 1:5){
   saveXML(src, paste0('results/scrape_html_',gsub(' ','-',statement),'_HOME_',gsub('[^0-9]','_',Sys.time()),'.html') )
   
   ##### SEARCH WITH KEYWORDS #####
-  statement <- Top100GlobalWarming$bigram[row]
-  paste('KEYWORD:', statement) %>% print
   
   # get YouTube search bar reference, send text(keyword) to it and simulate pressing enter
   address_element <- remote_driver$findElement(using = "name", value = "search_query")
@@ -237,12 +238,13 @@ for (row in 1:5){
   saveXML(src, paste0('results/scrape_html_',gsub(' ','-',statement),'_SEARCH_',gsub('[^0-9]','_',Sys.time()),'.html') )
   
   ##### CLICK ON 1st RECOMMENDATION #####
-  remote_driver$findElement(using = "css", "a[rel=spf-prefetch]")$clickElement()
+  remote_driver$findElement(using = "css", ".yt-lockup-thumbnail a")$clickElement()
   Sys.sleep(1)
   
-  n_scrape = 3
+  n_scrape = 20
   for(count in 1:n_scrape){ 
     paste('Iteration', count) %>% print
+    
     ##### RECORD HTML #####
     # remote_driver$switchToFrame(NULL)
     src <- XML::htmlParse(remote_driver$getPageSource()[[1]])
@@ -262,18 +264,24 @@ for (row in 1:5){
     
     ##### SCRAPE #####
     # fetch html from current remote_driver url
+    html <- remote_driver$getCurrentUrl()[[1]] %>% read_html
+    src_file <- gsub('.html$','_rvest.html', src_file)
+    html %>% as.character %>% write(src_file)
     html <- read_html(src_file)
     
-    #scrape results of first keyword data
-    scrape_page(html, csv_file, statement, count, src_file)
+    # DO SCRAPE
+    next_video_id <- scrape_page(html, csv_file, statement, count, src_file)
     
     ##### WATCH #####
-    # Timeout for (very) long videos and live streams (stop watching after N seconds), for now 1h
+    # Click play
+    # remote_driver$findElement(using = "css", 'button[aria-label="Play (k)"]')$clickElement()
+    
+    # Timeout for (very) long videos and live streams (stop watching after N seconds), for now 1 min
     tic(gcFirst = T)
-    N <- 3600
+    N <- 60
     
     # watch the video until the end / timer expiry
-    state <- remote_driver$executeScript("return document.getElementById('movie_player').getPlayerState()")
+    state <- remote_driver$executeScript("return document.getElementById('movie_player').getPlayerState()")[[1]]
     
     while( (state != 0) & (toc(echo = F) <= N)){
       state <- remote_driver$executeScript("return document.getElementById('movie_player').getPlayerState()")
@@ -304,7 +312,9 @@ for (row in 1:5){
     ##### NEXT VIDEO #####
     #click on next recommended video
     if(count != n_scrape){
-      remote_driver$findElement(using = "xpath", value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[2]/div/div[3]/ytd-watch-next-secondary-results-renderer/div[2]/ytd-compact-autoplay-renderer/div[2]/ytd-compact-video-renderer/div[1]/ytd-thumbnail/a")$clickElement()
+      # remote_driver$findElement(using = "xpath", value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[2]/div/div[3]/ytd-watch-next-secondary-results-renderer/div[2]/ytd-compact-autoplay-renderer/div[2]/ytd-compact-video-renderer/div[1]/ytd-thumbnail/a")$clickElement()
+      css_id <- paste0("a[href$='",next_video_id,"']")
+      remote_driver$findElement(using = "css", css_id)$clickElement()
       Sys.sleep(2)
     }
   }
@@ -339,4 +349,12 @@ for (row in 1:5){
 # rvs %>% spread(V1, V2) %>% glimpse
 
 
+
+# btn <- remote_driver$findElement(using = "css", 'button[aria-label=Play]')
+# 
+# #unlist(lapply(btn, function(x) {x$getElementAttribute('aria-label')}))
+# 
+# btn$getElementAttribute('aria-label')
+# 
+# html %>% html_nodes('button') %>% html_attr('class')
 #####################################
