@@ -90,8 +90,17 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   # Alternative: watch_next$compactVideoRenderer$navigationEndpoint$watchEndpoint$videoId[3:20] %>% glimpse
   
   watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
+  
   reco_videos_id <- watch_next$compactVideoRenderer$videoId[3:20]
+  
+  for(i in 1:18){
+    if(is.null(next_video_id)) next_video_id <- reco_videos_id[i]
+    else if(next_video_id == '') next_video_id <- reco_videos_id[i]
+    else break
+  }
+  
   reco_urls <- paste0('https://www.youtube.com/watch?v=', reco_videos_id)
+  
   reco_videos_id <- paste(reco_videos_id, collapse=' ; ')
   reco_urls <- paste(reco_urls, collapse=' ; ')
   
@@ -164,6 +173,7 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   
   write(line_data, csv_file, append=TRUE)
 
+  
   return(next_video_id)
 }
 
@@ -271,6 +281,8 @@ for (row in 1:5){
     
     # DO SCRAPE
     next_video_id <- scrape_page(html, csv_file, statement, count, src_file)
+    if(is.null(next_video_id)) next
+    if(next_video_id == '') next
     
     ##### WATCH #####
     # Click play
