@@ -61,8 +61,8 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   
   for(i in 1:length(txt)){
     line <- txt[i]
-    temp <- str_extract(line, '[^s]likeCount.?.?.?[0-9 ,]*')
-    if(!is.na(temp)) {
+    if(grepl('RELATED_PLAYER_ARGS', line)) {
+      if(!is.na(temp)) temp <- str_extract(line, '[^s]likeCount.?.?.?[0-9 ,]*')
       likes <- c(likes, temp)
       temp <- str_extract(line, 'dislikeCount.?.?.?[0-9 ,]*')
       if(!is.na(temp)) dislikes <- c(dislikes, temp)
