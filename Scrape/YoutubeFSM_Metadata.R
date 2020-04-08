@@ -201,7 +201,7 @@ timer <- Sys.time()
 #####################################
 
 ##### TRY KEYWORDS ##### 
-for (row in 1:5){
+for (row in 2:5){
   
   ##### GET KEYWORDS #####
   statement <- Top100GlobalWarming$bigram[row]
@@ -341,12 +341,14 @@ for (row in 1:5){
           
           # Skip empty links & self-link
           if(is.null(h)) next
+          if(is.na(h)) next
           if(h == '') next
           if(grepl(now_video, h)) next
           
           for(n in next_videos){
             # Skip empty video ids
             if(is.null(n)) next
+            if(is.na(n)) next
             if(n == '') next
 
             if(grepl(n, h)) {
