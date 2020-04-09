@@ -1,7 +1,6 @@
 library(dplyr)
 library(rvest)
 
-# Scrape trnascription given a TED website URL (must end with /transcripts)
 transcriptTED <- function(pageurl) {
   pagehtml <- pageurl %>% read_html()
   

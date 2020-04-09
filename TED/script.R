@@ -96,12 +96,8 @@ dfwords <- left_join(dfwords, total_words)
 dfwords <- dfwords %>%
   bind_tf_idf(word, speech, n)
 
-N <- 5000
-
 dfwords %>%
-  arrange(desc(tf_idf)) %>%
-  head(N) %>%
-  write_csv("unigramtfidfTED.csv")
+  arrange(desc(tf_idf))
 
 # same with bigrams
 
@@ -122,17 +118,13 @@ dfbifiltered <- dfbisep %>%
   filter(!word2 %in% stop_words$word)
 
 dfbifiltered %>%
-  count(word1, word2, sort = T) %>%
-  write_csv("bigramsfilteredTED.csv")
+  count(word1, word2, sort = T)
 
 # tf_idf
-N <- 5000
 
 bigr_tf_idf <- dfbigrams %>%
   count(speech, bigram) %>%
   bind_tf_idf(bigram, speech, n) %>%
   arrange(desc(tf_idf))
 
-bigr_tf_idf %>% 
-  head(N) %>%
-  write_csv("bigramstfidfTED.csv")
+bigr_tf_idf
