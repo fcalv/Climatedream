@@ -64,8 +64,8 @@ descr_out <- c("(This channel used to be called MajorPrep, changed as of January
 nodes <- data.frame() 
 
 # If the script is interrupted, restart the loop where it stopped with this line of code:
-for(v in video_all[nrow(nodes)+1:length(video_all)]){
-# for(v in video_all){
+# for(v in video_all[nrow(nodes)+1:length(video_all)]){
+for(v in video_all){
   print(v)
   occurence <- data %>% filter(video_id == v) %>% slice(1)
   
@@ -268,10 +268,6 @@ c(links$target, links$source) %>% unique %>% length
 
 # Format nodes
 nodes$radius <- as.numeric(nodes$radius)
-nodes_direct <- c(links_direct$source, links_direct$target) %>% unique
-nodes <- nodes %>% 
-  mutate(label = ifelse(id %in% nodes_direct, 'direct', 'recommendation'))
-
 
 main_video <- data %>% select(video_id) %>% pull %>% unique
 

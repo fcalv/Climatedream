@@ -11,7 +11,7 @@ library(webdriver)
 library(RSelenium)
 library(XML)
 library(jsonlite)
-# webdriver::install_phantomjs()
+# webdriver::install_phantomjs
 
 options(stringsAsFactors = FALSE)
 
@@ -194,7 +194,7 @@ Top100GlobalWarming <- read.csv("Top100GlobalWarming.csv", header=TRUE, sep=";")
 timer <- Sys.time()
 
 ##### TRY KEYWORDS ##### 
-for (row in 28:length(Top100GlobalWarming$bigram)){
+for (row in 1:length(Top100GlobalWarming$bigram)){
   
   ##### START SELENIUM DRIVER #####
   driver <- rsDriver(browser = c("chrome"), port=port$port, chromever="80.0.3987.106")
