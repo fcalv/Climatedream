@@ -67,10 +67,15 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   for(i in 1:length(txt)){
     line <- txt[i]
     if(grepl('RELATED_PLAYER_ARGS', line)) {
-      if(!is.na(temp)) temp <- str_extract(line, '[^s]likeCount.*[0-9 ,\\.]*')
+      temp <- str_extract(line, '[^s]likeCount.?.?.?[0-9 ,\\.]*')
+      if(!is.null(temp)) temp <- ''
+      if(!is.na(temp)) temp <- ''
       likes <- c(likes, temp)
+      
       temp <- str_extract(line, 'dislikeCount.?.?.?[0-9 ,\\.]*')
-      if(!is.na(temp)) dislikes <- c(dislikes, temp)
+      if(!is.null(temp)) temp <- ''
+      if(!is.na(temp)) temp <- ''
+      dislikes <- c(dislikes, temp)
       
       json <- gsub("^ *'RELATED_PLAYER_ARGS': *|,$", '', line) 
       json <- json %>% fromJSON
@@ -177,7 +182,6 @@ scrape_page <- function(html, csv_file, keyword_ref, iteration, html_src){
   
   write(line_data, csv_file, append=TRUE)
 
-  
   return(reco_videos_id_vector)
 }
 
@@ -191,12 +195,12 @@ Top100GlobalWarming <- read.csv("Top100GlobalWarming.csv", header=TRUE, sep=";")
 #####################################
 # SCRAPE IN ACTION
 #####################################
-timer <- Sys.time()
 
-##### TRY KEYWORDS ##### 
+# TRY KEYWORDS
 for (row in 1:length(Top100GlobalWarming$bigram)){
   
   ##### START SELENIUM DRIVER #####
+  timer <- Sys.time()
   driver <- rsDriver(browser = c("chrome"), port=port$port, chromever="80.0.3987.106")
   remote_driver <- driver[["client"]]
   
@@ -211,9 +215,11 @@ for (row in 1:length(Top100GlobalWarming$bigram)){
                   "likes", "dislikes", "next_video_id", "next_video_url", 
                   "reco_videos_id", "reco_urls", "reco_titles", "reco_channels_id", "reco_channels_name", 
                   "reco_whys", "reco_durations", "reco_thumbnails", "reco_snippets", 
-                  "reco_ages_year", " reco_badges") %>% paste0(collapse='\t')
-  csv_file <- paste0('results/scrape_results_',gsub(' ','',statement),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
+                  "reco_ages_year", "reco_badges") %>% paste0(collapse='\t')
+  csv_file <- paste0('results/scrape_results_',
+                     gsub(' ','',statement),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
   write(csv_header, csv_file)
+  
   
   ##### INIT SESSION #####
   # Refresh youtube and clear all cookies
@@ -227,6 +233,7 @@ for (row in 1:length(Top100GlobalWarming$bigram)){
   src <- XML::htmlParse(remote_driver$getPageSource()[[1]])
   saveXML(src, paste0('results/scrape_html_',gsub(' ','-',statement),'_HOME_',gsub('[^0-9]','_',Sys.time()),'.html') )
   
+  
   ##### SEARCH WITH KEYWORDS #####
   
   # get YouTube search bar reference, send text(keyword) to it and simulate pressing enter
@@ -238,12 +245,16 @@ for (row in 1:length(Top100GlobalWarming$bigram)){
   src <- XML::htmlParse(remote_driver$getPageSource()[[1]])
   saveXML(src, paste0('results/scrape_html_',gsub(' ','-',statement),'_SEARCH_',gsub('[^0-9]','_',Sys.time()),'.html') )
   
+  
   ##### CLICK ON 1st RECOMMENDATION #####
   remote_driver$findElement(using = "css", ".yt-lockup-thumbnail a")$clickElement()
   Sys.sleep(1)
   
+  
+  ##### FOLLOW RECOMMENDATIONS 20 TIMES #####
   n_scrape = 20
   for(count in 1:n_scrape){ 
+    ##### Init #####
     paste('Iteration', count) %>% print
     
     start_url <- remote_driver$getCurrentUrl()[[1]] 
@@ -262,6 +273,7 @@ for (row in 1:length(Top100GlobalWarming$bigram)){
     html <- read_html(html_src)
     
     next_videos <- scrape_page(html, csv_file, statement, count, html_src)
+    
     
     ##### WATCH #####
     # Click play
@@ -354,9 +366,10 @@ for (row in 1:length(Top100GlobalWarming$bigram)){
   remote_driver$close()
   driver$server$stop()
   
-  # Break after 6 hours
+  ##### (abort lagging sessions)  #####
   if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6 ) {
     print("Timer has expired")
     break
   }
+  
 }

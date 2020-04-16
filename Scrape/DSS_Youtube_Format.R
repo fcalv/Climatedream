@@ -58,6 +58,33 @@ check_length <- function(data, len){
   else rep('', len) %>% return
 }
 
+clean <- function(vector){
+  vector <- vector[!is.null(vector)]
+  vector <- vector[!is.na(vector)]
+  vector <- vector[vector!='NA']
+  vector <- vector[vector!='']
+  return(vector)
+}
+
+# WARNING
+# Result differ each time it's run!
+get_reco <- function(video_id){
+  html <- paste0('https://www.youtube.com/watch?v=',video_id) %>% read_html
+  html %>% as.character %>% write('temp.html')
+  txt <- readLines('temp.html')
+  
+  # Find JSON
+  for(i in 1:length(txt)){
+    if(grepl('RELATED_PLAYER_ARGS', txt[i])) {
+      json <- gsub("^ *'RELATED_PLAYER_ARGS': *|,$", '', txt[i]) %>% fromJSON
+      watch_next <- json$watch_next_response %>% fromJSON
+      watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
+      break
+    }
+  }
+  watch_next$compactVideoRenderer$videoId[3:20] %>% unique %>% clean %>% return 
+}
+
 descr_out <- c("(This channel used to be called MajorPrep, changed as of January 8th, 2020). I make nerdy and occasionally funny videos.")
 
 ##### Make Nodes #####
@@ -172,103 +199,82 @@ video_all %>% length
 nodes$id %>% unique %>% length
 
 
-##### Make Direct Links #####
-links_raw <- data.frame()
+##### Make Links #####
+links <- data.frame()
 for(k in keywords){
   d <- data %>% filter(keyword_ref == k)
+  
+  # Direct Links
   for(i in 2:nrow(d)){
     src <- d %>% slice(i-1)
     tar <- d %>% slice(i)
-    links_raw <- rbind(links_raw, data.frame(source=src$video_id, target=tar$video_id))
-  }
-}
-links_raw <- links_raw %>% mutate(link_id = paste(source, '----->', target)) 
-links_raw <- links_raw %>% distinct
-
-links_count <- links_raw %>% 
-  group_by(link_id) %>% 
-  count
-
-links_direct <- links_count %>% 
-  ungroup %>%
-  mutate(source = gsub(' ----->.*$','',link_id)) %>%
-  mutate(target = gsub('^.* -----> ','',link_id)) %>%
-  rename(value = n) %>%
-  select(source, target, value) 
-
-x <- links_direct %>% nrow
-links_direct <- links_direct %>% 
-  mutate(type = rep('direct', x))
-
-links_direct %>% glimpse
-
-
-
-##### Make Reco Links #####
-links_reco_raw <- data.frame()
-for(v in video_all){
-  occurence <- data %>% filter(video_id == v)
-  if(nrow(occurence)==0){
-    occurence <- data %>% filter(grepl(v, reco_videos_id)) %>% slice(1)
+    line <- data.frame(source=src$video_id, target=tar$video_id, rank=(i-1), 
+                       session=k, type='direct', value=2)
+    links <- rbind(links, line)
+    print(line)
     
-    rec_v <- occurence$reco_videos_id %>% str_split(' *; *') %>% unlist
-    rec_v <- gsub('^.*=','', rec_v) %>% unique
+    # Recommendation links
+    reco <- src$reco_videos_id %>% str_split(' *; *') %>% unlist %>% unique %>% clean
+    reco <- gsub('^.*=','', reco)
     
-    for(rec in rec_v){
-      if(is.null(rec)) next
-      if(is.na(rec)) next
-      if(rec == 'NA') next
-      if(rec == '') next
-      if(! rec %in% video_all) {
-        print(rec)
-        next
+    for(r in reco){
+      line <- data.frame(source=src$video_id, target=r, rank=(i-1), 
+                         session=k, type='recommendation', value=1)
+      links <- rbind(links, line)
+      print(line)
+      
+      ### 2nd order links
+      reco_l2 <- get_reco(r)
+      for(r2 in reco_l2){
+        occurence <- data %>% filter(video_id == r2)
+        if(nrow(occurence) != 0) {
+          line <- data.frame(source=src$video_id, target=r2, rank=(i-1), 
+                             session=k, type='recommendation', value=0.5)
+          links <- rbind(links, line)
+          print(line)
+        }
       }
-      line <- data.frame(source=v, target=rec, stringsAsFactors = F)
-      links_reco_raw <- rbind(links_reco_raw, line)
+    }
+    
+    # Reco of last video
+    if(i==nrow(d)){
+      reco <- tar$reco_videos_id %>% str_split(' *; *') %>% unlist %>% unique %>% clean
+      reco <- gsub('^.*=','', reco)
+      
+      for(r in reco){
+        line <- data.frame(source=tar$video_id, target=r, rank=(i), 
+                           session=k, type='recommendation', value=1)
+        links <- rbind(links, line)
+        print(line)
+        
+        ### 2nd order links
+        reco_l2 <- get_reco(r)
+        for(r2 in reco_l2){
+          occurence <- data %>% filter(video_id == r2)
+          if(nrow(occurence) != 0) {
+            line <- data.frame(source=tar$video_id, target=r2, rank=(i-1), 
+                               session=k, type='recommendation', value=0.5)
+            links <- rbind(links, line)
+            print(line)
+          }
+        }
+      }
     }
   }
 }
-links_reco_raw %>% glimpse
-
-links_reco_raw <- links_reco_raw %>% mutate(link_id = paste(source, '----->', target)) 
-links_reco_raw <- links_reco_raw %>% distinct
-
-links_reco_count <- links_reco_raw %>% 
-  group_by(link_id) %>% 
-  count
-
-n_links <- nrow(links_reco_count)
-links_reco <- links_reco_count %>% 
-  ungroup %>%
-  mutate(source = gsub(' ----->.*$','',link_id)) %>%
-  mutate(target = gsub('^.* -----> ','',link_id)) %>%
-  rename(value = n) %>%
-  mutate(type = rep('recommendation',n_links)) %>%
-  select(source, target, value, type) 
-
-links_reco %>% glimpse
-
-##### Check & bind links ##### 
-links_direct %>% glimpse
-links_reco %>% glimpse
-links <- rbind(links_direct, links_reco)
-
-links <- links %>% filter(source!=target)
 links %>% glimpse
 
-
-links <- links %>% select(source, target, value, type)
-
-##### Make - Check - Write #####
+#####  Check & Complete #####
 # Check number of nodes
 length(video_all)
 nrow(nodes)
 c(links$target, links$source) %>% unique %>% length
 
+# Missing nodes
+# links_n <- c(links$target, links$source) %>% unique
+# links_n[! links_n %in% video_all]
 
 # Format nodes
-nodes$radius <- as.numeric(nodes$radius)
-
 main_video <- data %>% select(video_id) %>% pull %>% unique
 
 nodes_reformat <- nodes %>% 
@@ -281,17 +287,49 @@ nodes_reformat <- nodes %>%
 
 nodes_reformat %>% glimpse
 
+links_equi <- links %>% mutate(value = 1)
+links_equi %>% glimpse
+#####################################
+# NODES WITH ALL SESSIONS
+#####################################
+nodes_all <- nodes_reformat %>% mutate(session_all = session )
+nodes_all %>% glimpse
+
+links_id <- c(links_equi$source, links_equi$target) %>% unique
+
+node_new <- data.frame()
+for(i in 1:length(links_id)){
+  session_list <- c()
+  n <- links_id[i]
+  
+  link <- links_equi %>% filter(source == n | target == n)
+  link_nodes <- c(link$source, link$target) %>% unique
+  
+  link_nodes_data <- nodes_all %>% filter(id %in% link_nodes)
+  session_list <- c(session_list, link_nodes_data$session)
+  
+  node <- nodes_all %>% filter(id == n)
+  session_list <- c(session_list, node$session)
+   
+  node$session_all <- session_list %>% unique %>% paste(collapse = ' ; ')
+  
+  node_new <- rbind(node_new, node)
+}
+node_new$session_all
+node_new %>% glimpse
+
+n = 'Qp_cM2WXMLc'
+node_new %>% filter(id == n)
+
 #####################################
 # WRITE JSON
 #####################################
 
-json <- list(nodes = nodes_reformat, links=links)
-json %>% toJSON() %>% write('results.json')
+json <- list(nodes = node_new, links=links_equi)
+json %>% toJSON() %>% write('results_l2_equi_allsession.json')
 
-json <- list(nodes = nodes_reformat, links=links_direct)
-json %>% toJSON() %>% write('results_direct.json')
+json <- list(nodes = node_new, links=links_equi %>% filter(type=='direct'))
+json %>% toJSON() %>% write('results_l2_equi_allsession_direct.json')
 
-json <- list(nodes = nodes_reformat, links=links_reco)
-json %>% toJSON() %>% write('results_reco.json')
 
 
