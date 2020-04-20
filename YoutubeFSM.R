@@ -295,7 +295,14 @@ for (row in 1:nrow(Top100GlobalWarming)){
       if (length(test_element) == 1) {
         test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/ytd-mealbar-promo-renderer/div/div[2]/ytd-button-renderer[1]/a/paper-button")
         test_element$clickElement() 
-      }  
+      } 
+      
+      # close are you still watching
+      test_element <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/yt-confirm-dialog-renderer/div[2]/div/yt-button-renderer[2]/a/paper-button/paper-ripple")
+      if (length(test_element) == 1) {
+        test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/yt-confirm-dialog-renderer/div[2]/div/yt-button-renderer[2]/a/paper-button/paper-ripple")
+        test_element$clickElement() 
+      }
     }
     
     
@@ -347,7 +354,14 @@ for (row in 1:nrow(Top100GlobalWarming)){
     if (length(test_element) == 1) {
       test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/ytd-mealbar-promo-renderer/div/div[2]/ytd-button-renderer[1]/a/paper-button")
       test_element$clickElement() 
-    } 
+    }
+    
+    # close are you still watching
+    test_element <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/yt-confirm-dialog-renderer/div[2]/div/yt-button-renderer[2]/a/paper-button/paper-ripple")
+    if (length(test_element) == 1) {
+      test_element <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/ytd-popup-container/paper-dialog/yt-confirm-dialog-renderer/div[2]/div/yt-button-renderer[2]/a/paper-button/paper-ripple")
+      test_element$clickElement() 
+    }
   }
   
   # break condition after 6 hours
