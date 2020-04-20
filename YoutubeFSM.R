@@ -202,9 +202,10 @@ test_scrape <- function(){
 
 #driver <- rsDriver(browser = c("firefox"), port=5555L)
 # to check current version chrome://version/
-driver <- rsDriver(browser = c("chrome"), port=5546L, chromever="80.0.3987.106")
+driver <- rsDriver(browser = c("chrome"), port=5556L, chromever="80.0.3987.16")
 
 remote_driver <- driver[["client"]] 
+remote_driver$setTimeout(type = "page load", milliseconds = 1000)
 remote_driver$navigate("https://www.youtube.com/")
 #address_element <- remote_driver$findElement(using = 'id', value = 'search')
 #address_element$sendKeysToElement(list("first trial", key = "enter"))#first keyword
@@ -258,7 +259,6 @@ for (row in 1:nrow(Top100GlobalWarming)){
   # Go back up
   webElem$sendKeysToElement(list(key = "home"))
   
-
   #fetch html from current remote_driver url
   currenturl <- toString(remote_driver$getCurrentUrl())
   html <- currenturl %>% read_html()
