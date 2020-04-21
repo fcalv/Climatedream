@@ -231,8 +231,8 @@ remote_driver$navigate("https://www.youtube.com/")
 
 
 # Use your preferred login credentials
-mail <- "annypowell1@gmail.com"
-password <- "r#'8e$hGN'{!D=m"
+mail <- ""
+password <- ""
 
 
 t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
