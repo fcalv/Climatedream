@@ -263,18 +263,18 @@ btn$sendKeysToElement(list(password, key = "enter"))
 
 searchQueries <- read.csv("climatechangeskeptics.txt", header=TRUE, sep="\t")
 
-metadata <- data.frame(Keyword = character(), Title = character(), Channel = character(), Category = character(), SUB_CNT = character(), Thumbnail = character(), Descript = character(), Fam_friendly = character(), Monetized = character(), VIEW_CNT = character(), LIKE_CNT = character(), DISLIKE_CNT = character(), recc_videos = character(), recc_titles = character(), recc_channs = character(),Thumbnails = character())
+metadata <- data.frame(Keyword = character(), Title = character(), Channel = character(), Category = character(), SUB_CNT = character(), Thumbnail = character(), Descript = character(), Fam_friendly = character(), Monetized = character(), VIEW_CNT = character(), LIKE_CNT = character(), DISLIKE_CNT = character(), recc_videos = character(), recc_titles = character(), recc_channs = character(),Thumbnails = character(), InSessionIndex = character())
 csvfile <- paste0('results/scrape_results_',gsub(' ','',"searchquery"),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
 metadata %>% write.table(file = csvfile, sep = '\t')
 
 
 
 timer <- Sys.time()
+video_count <- 0
 
 for (row in 1:nrow(searchQueries)){
   
-  
-  
+  video_count <- video_count + 1
   Sys.sleep(2)
   
   statement <- searchQueries$Names[row]
@@ -341,7 +341,7 @@ for (row in 1:nrow(searchQueries)){
   scrape()
   
   # add data to the dataframe
-  line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, stringsAsFactors = FALSE, check.rows = FALSE)
+  line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = row, stringsAsFactors = FALSE, check.rows = FALSE)
   
   metadata <- rbind(metadata,line)
   write.table(x = line,file = csvfile,append = T,sep = '\t',row.names = F,col.names = F)
@@ -349,6 +349,7 @@ for (row in 1:nrow(searchQueries)){
   count = 1
   while(count <= 3){ 
     
+    video_count <- video_count + 1
     # Timeout for (very) long videos and live streams (stop watching after N seconds), for now 1h
     tic(gcFirst = T)
     N <- 30
@@ -401,7 +402,7 @@ for (row in 1:nrow(searchQueries)){
     scrape()
     
     #append new row of data to data frame
-    line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, stringsAsFactors = FALSE, check.rows = FALSE)
+    line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = video_count, stringsAsFactors = FALSE, check.rows = FALSE)
     
     metadata <- rbind(metadata,line)
     write.table(x = line,file = csvfile,append = T,sep = '\t',row.names = F,col.names = F)
