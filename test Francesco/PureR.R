@@ -17,8 +17,10 @@ scrape <- function(){
 
   tryCatch(
     expr = {
-  current_url <- remote_driver$getCurrentUrl() %>% unlist()
+  
+      current_url <- remote_driver$getCurrentUrl() %>% unlist()
   current_videoid <- current_url %>% str_extract(pattern = "=.{11}") %>% sub(pattern = "=",replacement = "")
+  videoid <<- current_videoid
   
   html <- remote_driver$getPageSource() %>% unlist()
   write(x = paste("<!doctype html>",html), file = "html.html")
@@ -39,10 +41,11 @@ scrape <- function(){
   #subs_ref <- remote_driver$findElement(using = "xpath", value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[1]/div/div[9]/div[3]/ytd-video-secondary-info-renderer/div/div[2]/ytd-video-owner-renderer/div[1]/yt-formatted-string")
   span_subs <- html %>% html_node(xpath = '//*[@id="owner-sub-count"]') %>% html_text()
   span_subs <- str_remove(span_subs, " subscribers")
-  span_subs <- as.numeric(sub("K", "e3", span_subs, fixed = TRUE))
-  span_subs <- as.numeric(sub("Mln", "e6", span_subs, fixed = TRUE))
+  span_subs <- gsub(',','',span_subs)
+  span_subs <- sub("M", "e6", span_subs, fixed = TRUE)
+  span_subs <- sub("K", "e3", span_subs, fixed = TRUE)
   span_subs <- gsub('\t','',span_subs)
-  span_subs <<- span_subs
+  span_subs <<- as.integer(span_subs)
   
   #desc_ref <- remote_driver$findElement(using = "xpath", value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[1]/div/div[9]/div[3]/ytd-video-secondary-info-renderer/div/ytd-expander/div/div/yt-formatted-string")
   description <- html %>% html_node(xpath = '//*[@id="description"]/yt-formatted-string') %>% html_text()
@@ -71,30 +74,36 @@ scrape <- function(){
   likesdislikes_num <- html %>% html_nodes(xpath = '//*[@id="text"]') %>% html_attr('aria-label')
   
   likes_num <- likesdislikes_num[grep(likesdislikes_num,pattern = " likes")] %>% str_remove(" likes")
-  likes_num <- str_remove(likes_num, ",")
+  likes_num <- gsub(",", '', likes_num)
   likes_num <- gsub('\t','',likes_num)
+  likes_num <- sub("K", "e3", likes_num, fixed = TRUE)
+  likes_num <- sub("M", "e6", likes_num, fixed = TRUE)
   likes <<- as.integer(likes_num)
   
   #dislikes_ref <- remote_driver$findElement(using = "xpath", value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[1]/div/div[7]/div[2]/ytd-video-primary-info-renderer/div/div/div[3]/div/ytd-menu-renderer/div/ytd-toggle-button-renderer[2]/a/yt-formatted-string")
   #dislikes_num <- dislikes_ref$getElementText()
   dislikes_num <- likesdislikes_num[grep(likesdislikes_num,pattern = " dislikes")] %>% str_remove(" dislikes")
-  dislikes_num <- str_remove(dislikes_num, ",")
-  dislikes_num <<- gsub('\t','',dislikes_num)
+  dislikes_num <- gsub(",", '', dislikes_num)
+  dislikes_num <- gsub('\t','',dislikes_num)
+  dislikes_num <- gsub(',','',dislikes_num)
+  dislikes_num <- sub("K", "e3", dislikes_num, fixed = TRUE)
+  dislikes_num <- sub("M", "e6", dislikes_num, fixed = TRUE)
   dislikes <<- as.integer(dislikes_num)
   
   views_ref <- html %>% html_nodes(xpath = '//*[@id="count"]/yt-view-count-renderer/span[1]')
   views <- views_ref %>% html_text()
-  views <- str_remove(views, " views")
-  views <- str_remove(views, ",")
+  views <- str_remove(views, " views.{0,}")
+  views <- gsub(',','',views)
   views <- gsub('\t','',views)
   views <<- as.integer(views)
   
-  recc_thumbs_ref <- remote_driver$findElements(value = "//img[@class = 'style-scope yt-img-shadow']")
-  recc_thumbs <- sapply(recc_thumbs_ref, function(x) x$getElementAttribute("src"))
-  recc_thumbs <- sapply(recc_thumbs, function(x) unlist(x))
-  recc_thumbs <- recc_thumbs[recc_thumbs != 'NULL']
-  recc_thumbs <- gsub('\t','',recc_thumbs)
-  thumbs <<- paste(recc_thumbs, collapse = ';')
+  # recc_thumbs_ref <- remote_driver$findElements(value = "//img[@class = 'style-scope yt-img-shadow']")
+  # recc_thumbs <- sapply(recc_thumbs_ref, function(x) x$getElementAttribute("src"))
+  # recc_thumbs <- sapply(recc_thumbs, function(x) unlist(x))
+  # recc_thumbs <- recc_thumbs[recc_thumbs != 'NULL']
+  # recc_thumbs <- gsub('\t','',recc_thumbs)
+  # thumbs <<- paste(recc_thumbs, collapse = ';')
+
   
   #get current video monetization status
   paid <<- html_rvest %>%
@@ -113,6 +122,12 @@ scrape <- function(){
   links <- paste(links_ref, collapse = ';')
   links <<- gsub('\t','',links)
   
+  recc_thumbs <- links_ref %>% str_extract(pattern = "=.{11}") %>% sub(pattern = "=",replacement = "")
+  recc_thumbs <- sapply(recc_thumbs, function(x) paste0("https://img.youtube.com/vi/", x, "/hqdefault.jpg"))
+  recc_thumbs <- recc_thumbs[recc_thumbs != 'NULL']
+  recc_thumbs <- gsub('\t','',recc_thumbs)
+  thumbs <<- paste(recc_thumbs, collapse = ';')
+    
     },
 error = function(e){
   statement <<- ""
@@ -216,8 +231,8 @@ remote_driver$navigate("https://www.youtube.com/")
 
 
 # Use your preferred login credentials
-mail <- "."
-password <- "."
+mail <- "annypowell1@gmail.com"
+password <- "r#'8e$hGN'{!D=m"
 
 
 t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
@@ -263,7 +278,9 @@ btn$sendKeysToElement(list(password, key = "enter"))
 
 searchQueries <- read.csv("climatechangeskeptics.txt", header=TRUE, sep="\t")
 
-metadata <- data.frame(Keyword = character(), Title = character(), Channel = character(), Category = character(), SUB_CNT = character(), Thumbnail = character(), Descript = character(), Fam_friendly = character(), Monetized = character(), VIEW_CNT = character(), LIKE_CNT = character(), DISLIKE_CNT = character(), recc_videos = character(), recc_titles = character(), recc_channs = character(),Thumbnails = character(), InSessionIndex = character())
+
+metadata <- data.frame(Keyword = character(), Title = character(), Channel = character(), VideoID = character(), Category = character(), SUB_CNT = character(), Thumbnail = character(), Descript = character(), Fam_friendly = character(), Monetized = character(), VIEW_CNT = character(), LIKE_CNT = character(), DISLIKE_CNT = character(), recc_videos = character(), recc_titles = character(), recc_channs = character(),Thumbnails = character(), InSessionIndex = character())
+
 csvfile <- paste0('results/scrape_results_',gsub(' ','',"searchquery"),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
 metadata %>% write.table(file = csvfile, sep = '\t')
 
@@ -272,9 +289,14 @@ metadata %>% write.table(file = csvfile, sep = '\t')
 timer <- Sys.time()
 video_count <- 0
 
+
+### YOUTUBE SEARCH AND WATCH FIRST RESULT ###
+
+
 for (row in 1:nrow(searchQueries)){
   
   video_count <- video_count + 1
+
   Sys.sleep(2)
   
   statement <- searchQueries$Names[row]
@@ -307,6 +329,14 @@ for (row in 1:nrow(searchQueries)){
   
   remote_driver$findElement(using = "xpath", '/html/body/ytd-app/div/ytd-page-manager/ytd-search/div[1]/ytd-two-column-search-results-renderer/div/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-video-renderer[1]/div[1]/ytd-thumbnail/a')$clickElement()
   Sys.sleep(1)
+  
+  t <- remote_driver$findElements(using = "xpath",value = '//*[@id="container"]/h1/yt-formatted-string') %>% unlist() %>% is.null()
+  while (t) {
+    print("Zzzzzz...")
+    Sys.sleep(0.5)
+    
+    t <- remote_driver$findElements(using = "xpath",value = '//*[@id="container"]/h1/yt-formatted-string') %>% unlist() %>% is.null()
+  }
   
   # Scroll down to read more
   remote_driver$executeScript("return document.querySelector('#container').scrollIntoView(true)")
@@ -341,10 +371,14 @@ for (row in 1:nrow(searchQueries)){
   scrape()
   
   # add data to the dataframe
-  line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = row, stringsAsFactors = FALSE, check.rows = FALSE)
+
+  line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "VideoID" = videoid, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = row, stringsAsFactors = FALSE, check.rows = FALSE)
+
   
   metadata <- rbind(metadata,line)
   write.table(x = line,file = csvfile,append = T,sep = '\t',row.names = F,col.names = F)
+  
+  ### WATCH 3 RECC VIDEOS ###
   
   count = 1
   while(count <= 3){ 
@@ -376,10 +410,29 @@ for (row in 1:nrow(searchQueries)){
       }  
     }
     
+    statement <- searchQueries$Names[row]
+    
     print(paste0("Keyword: ",statement, ", click on recc ", count))
+    
+    t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[2]/div/div[3]/ytd-watch-next-secondary-results-renderer/div[2]/ytd-compact-autoplay-renderer/div[2]/ytd-compact-video-renderer/div[1]/ytd-thumbnail/a") %>% unlist() %>% is.null()
+    while (t) {
+      print("Zzzzzz...")
+      Sys.sleep(0.5)
+      
+      t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[2]/div/div[3]/ytd-watch-next-secondary-results-renderer/div[2]/ytd-compact-autoplay-renderer/div[2]/ytd-compact-video-renderer/div[1]/ytd-thumbnail/a") %>% unlist() %>% is.null()
+    }
     
     #click on next recommended video
     remote_driver$findElement(using = "xpath", value = "/html/body/ytd-app/div/ytd-page-manager/ytd-watch-flexy/div[4]/div[2]/div/div[3]/ytd-watch-next-secondary-results-renderer/div[2]/ytd-compact-autoplay-renderer/div[2]/ytd-compact-video-renderer/div[1]/ytd-thumbnail/a")$clickElement()
+    
+    t <- remote_driver$findElements(using = "xpath",value = '//*[@id="container"]/h1/yt-formatted-string') %>% unlist() %>% is.null()
+    while (t) {
+      print("Zzzzzz...")
+      Sys.sleep(0.5)
+      
+      t <- remote_driver$findElements(using = "xpath",value = '//*[@id="container"]/h1/yt-formatted-string') %>% unlist() %>% is.null()
+    }
+    
     
     Sys.sleep(2)
     
@@ -402,7 +455,9 @@ for (row in 1:nrow(searchQueries)){
     scrape()
     
     #append new row of data to data frame
-    line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = video_count, stringsAsFactors = FALSE, check.rows = FALSE)
+
+    line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "VideoID" = videoid, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = row, stringsAsFactors = FALSE, check.rows = FALSE)
+
     
     metadata <- rbind(metadata,line)
     write.table(x = line,file = csvfile,append = T,sep = '\t',row.names = F,col.names = F)
@@ -433,6 +488,7 @@ for (row in 1:nrow(searchQueries)){
     } 
   }
   
+  
   # break condition after 6 hours
   if (as.numeric(difftime(Sys.time(), timer, units = "mins")) >= 5 ) {
     break
@@ -440,6 +496,8 @@ for (row in 1:nrow(searchQueries)){
   
 }
 
+##########################
+### CLOSE SERVER    ######
 ##########################
 print("Timer has expired")
 
