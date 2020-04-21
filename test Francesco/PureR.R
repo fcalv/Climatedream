@@ -203,8 +203,11 @@ error = function(e){
 
 fport <- netstat::free_port()
 driver <- rsDriver(browser = c("chrome"), port=fport, chromever="80.0.3987.106")
+#driver <- rsDriver(browser = c("chrome"), port=fport, chromever="80.0.3987.16")
+
 
 remote_driver <- driver[["client"]] 
+# Causes error
 #remote_driver$setTimeout(type = "page load", milliseconds = 1000)
 
 remote_driver$deleteAllCookies()
@@ -215,6 +218,7 @@ remote_driver$navigate("https://www.youtube.com/")
 # Use your preferred login credentials
 mail <- "."
 password <- "."
+
 
 t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
 while (t) {
