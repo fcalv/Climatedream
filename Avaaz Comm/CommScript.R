@@ -18,7 +18,7 @@ folder <- c("Scraped ClimateChange","Scraped ClimateManipulation","Scraped Globa
 # 3 = Global Warming
 fold <- folder[3]
 
-
+N <- 5000
 
 ###########
 # READ FILES
@@ -136,10 +136,17 @@ wddf_bigrams_fil <- wddf_bigrams_sep %>%
 # save CSV
 wddf_bigrams_fil %>% 
   count(word1, word2, sort = TRUE) %>%
+  head(N) %>%
   write_csv(paste(fold,"bigramsfilter.csv",sep = "/"))
 
-# To TRY !!!
 # tf_idf
+
+bigr_tf_idf <- wddf_bigrams %>%
+  count(video, bigram) %>%
+  bind_tf_idf(bigram, video, n) %>%
+  arrange(desc(tf_idf)) %>%
+  head(N) %>%
+  write.table("bigramstf_idf.txt", sep = '\t')
 
 
 

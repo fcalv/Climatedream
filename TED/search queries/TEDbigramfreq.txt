@@ -1,0 +1,23 @@
+"bigram"	"n"
+"1"	"climate change"	98
+"2"	"ice sheet"	39
+"3"	"sea level"	37
+"4"	"global warming"	34
+"5"	"black holes"	27
+"8"	"sea ice"	22
+"10"	"global commons"	21
+"11"	"food system"	20
+"13"	"developing world climate"	19 [climate]
+"14"	"national park"	18
+"15"	"poor people"	18 [climate]
+"17"	"level rise"	17
+"18"	"liquid metal"	17
+"20"	"carbon dioxide"	16
+"22"	"hydrogen sulfide"	15
+"24"	"nitric oxide"	15
+"25"	"renewable energy"	15
+"27"	"united nations"	13 [climate]
+"28"	"human rights"	12 [climate]
+
+
+
