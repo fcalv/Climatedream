@@ -18,7 +18,7 @@ folder <- c("Scraped ClimateChange","Scraped ClimateManipulation","Scraped Globa
 # 3 = Global Warming
 fold <- folder[3]
 
-
+N <- 5000
 
 ###########
 # READ FILES
@@ -87,6 +87,8 @@ wddf <- dfcomm %>%
   mutate(text = as.character(text))
 
 # Tidy text
+wddfbycomm <- wddf %>% tibble(text = ., comnum = 1:nrow(wddf)) 
+
 wddfti <- wddf %>% unnest_tokens(word, text)
 
 # Word frequency unfiltered
@@ -134,20 +136,17 @@ wddf_bigrams_fil <- wddf_bigrams_sep %>%
 # save CSV
 wddf_bigrams_fil %>% 
   count(word1, word2, sort = TRUE) %>%
+  head(N) %>%
   write_csv(paste(fold,"bigramsfilter.csv",sep = "/"))
 
 # tf_idf
-N <- 5000
 
 bigr_tf_idf <- wddf_bigrams %>%
   count(video, bigram) %>%
   bind_tf_idf(bigram, video, n) %>%
-  arrange(desc(tf_idf))
-
-bigr_tf_idf %>%
+  arrange(desc(tf_idf)) %>%
   head(N) %>%
-  write_csv(paste(fold,"bigramstfidf.csv",sep = "/"))
-
+  write.table("bigramstf_idf.txt", sep = '\t')
 
 
 
@@ -155,39 +154,39 @@ bigr_tf_idf %>%
 # PLOTS
 
 # word frequency filtered TOP 15
-# N <- 15
-# 
-# wddftif %>%
-#   top_n(N) %>%
-# ggplot(aes(reorder(word, n), n)) +
-#   coord_flip() +
-#   geom_col(fill = "dark red") +
-#   theme_minimal() +
-#   theme(axis.title.y = element_blank()) +
-#   ggtitle("TOP 15 words by frequency")
-# 
-# ggsave(paste(fold, "TOP15freq.jpg",sep = "/"), dpi = 300)
-# 
-# # Bigram map
-# N <- 300
-# 
-# bigram_graph <- wddf_bigrams_fil %>%
-#   count(word1, word2, sort = TRUE) %>%
-#   filter(n > N) %>%
-#   graph_from_data_frame()
-# 
-# 
-# a <- grid::arrow(type = "closed", length = unit(.15, "inches"))
-# 
-# ggraph(bigram_graph, layout = "fr") +
-#   geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
-#                  arrow = a, end_cap = circle(.03, 'inches')) +
-#   geom_node_point(color = "lightpink", size = 4) +
-#   geom_node_text(aes(label = name), vjust = 0.4, hjust = 0.4) +
-#   theme_void()
-#   
-# ggsave(paste(fold, "TOPkeywords.jpg",sep = "/"), dpi = 300, scale = 2)
-# 
+N <- 15
+
+wddftif %>%
+  top_n(N) %>%
+ggplot(aes(reorder(word, n), n)) +
+  coord_flip() +
+  geom_col(fill = "dark red") +
+  theme_minimal() +
+  theme(axis.title.y = element_blank()) +
+  ggtitle("TOP 15 words by frequency")
+
+ggsave(paste(fold, "TOP15freq.jpg",sep = "/"), dpi = 300)
+
+# Bigram map
+N <- 300
+
+bigram_graph <- wddf_bigrams_fil %>%
+  count(word1, word2, sort = TRUE) %>%
+  filter(n > N) %>%
+  graph_from_data_frame()
+
+
+a <- grid::arrow(type = "closed", length = unit(.15, "inches"))
+
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.03, 'inches')) +
+  geom_node_point(color = "lightpink", size = 4) +
+  geom_node_text(aes(label = name), vjust = 0.4, hjust = 0.4) +
+  theme_void()
+  
+ggsave(paste(fold, "TOPkeywords.jpg",sep = "/"), dpi = 300, scale = 2)
+
 #################
 # Sentiment analysis
 
@@ -196,7 +195,7 @@ nrc_sent <- get_sentiments("nrc") %>%
   group_by(sentiment)
 
 
-wddf_sent_nrc <- wddf %>%
+wddf_sent_nrc <- wddf %>% 
   unnest_tokens(word, text) %>%
   inner_join(nrc_sent) %>%
   count(sentiment, sort=TRUE)
@@ -208,7 +207,7 @@ wddf_sent_nrc %>%
   geom_col(fill = "darkred") +
   theme_minimal() +
   theme(axis.title.y = element_blank()) +
-  ggtitle("NRC word count grouped by sentiment") +
+  ggtitle("NRC word count grouped by sentiment") + 
     coord_flip()
 
 ggsave(paste(fold, "TOPSentiment NRC.jpg",sep = "/"), dpi = 300, scale = 2)
@@ -219,14 +218,14 @@ bing_sent <- get_sentiments("bing")
 
 # count of positive and negative sentiment contribution
 
-wddf_sent_bing <- wddf %>%
+wddf_sent_bing <- wddf %>% 
   unnest_tokens(word, text) %>%
   inner_join(bing_sent) %>%
   group_by(sentiment) %>%
   count(word, sort=TRUE)
 
 
-wddf_bing <- wddf %>%
+wddf_bing <- wddf %>% 
   unnest_tokens(word, text) %>%
   inner_join(get_sentiments("bing"), by = c(word = "word"))
 

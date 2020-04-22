@@ -6,6 +6,8 @@ library(rlist)
 library(tidytext)
 source('transcriptTED.R')
 
+# first N rows in the results
+N <- 5000
 
 setwd(dirname(getSourceEditorContext()$path))
 
@@ -96,12 +98,10 @@ dfwords <- left_join(dfwords, total_words)
 dfwords <- dfwords %>%
   bind_tf_idf(word, speech, n)
 
-N <- 5000
-
 dfwords %>%
   arrange(desc(tf_idf)) %>%
   head(N) %>%
-  write_csv("unigramtfidfTED.csv")
+  write.table("unigramtf_idf.txt", sep = '\t')
 
 # same with bigrams
 
@@ -123,16 +123,30 @@ dfbifiltered <- dfbisep %>%
 
 dfbifiltered %>%
   count(word1, word2, sort = T) %>%
-  write_csv("bigramsfilteredTED.csv")
+  unite(col = "bigram", word1,word2, sep = " ") %>%
+  head(N) %>%
+  write.table(file = "bigramsfrequency.txt", sep = '\t')
+
 
 # tf_idf
-N <- 5000
 
 bigr_tf_idf <- dfbigrams %>%
   count(speech, bigram) %>%
   bind_tf_idf(bigram, speech, n) %>%
-  arrange(desc(tf_idf))
-
-bigr_tf_idf %>% 
+  arrange(desc(tf_idf)) %>%
   head(N) %>%
-  write_csv("bigramstfidfTED.csv")
+  write.table(file = "bigramstf_idf.txt", sep = '\t')
+
+bigr_tf_idf <- dfbigrams %>%
+  count(speech, bigram) %>%
+  bind_tf_idf(bigram, speech, n) %>%
+  arrange(desc(tf_idf)) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>%
+  unite(col = "bigram", word1,word2, sep = " ") %>%
+  head(N) %>%
+  write.table(file = "bigramstf_idf_filtered.txt", sep = '\t')
+
+
+  
