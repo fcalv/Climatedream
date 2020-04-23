@@ -188,7 +188,7 @@ scrape <- function(statement, remote_driver){
     thumbs <- ""
   }
   
-  line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "VideoID" = videoid, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = row, stringsAsFactors = FALSE, check.rows = FALSE)
+  line <- data.frame("Keyword" = statement, "Title" = curtitle, "Channel" = current_channel, "VideoID" = videoid, "Category" = current_category, "SUB_CNT" = span_subs, "Thumbnail" = current_thumbnail,"Descript" = description, "Fam_friendly" = famfriend, "Monetized" = paid, "VIEW_CNT" = views, "LIKE_CNT" = likes, "DISLIKE_CNT" = dislikes, "recc_videos" = links, "recc_titles" = titles, "recc_channs" = recc_channs,"Thumbnails" = thumbs, InSessionIndex = video_count, stringsAsFactors = FALSE, check.rows = FALSE)
   return(line)
     
     },

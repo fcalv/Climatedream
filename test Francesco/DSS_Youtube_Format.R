@@ -326,7 +326,7 @@ links_id <- c(links_equi$source, links_equi$target) %>% unique
 
 node_new <- data.frame()
 for(i in 1:length(links_id)){
-  #print(i)
+  print(i)
   session_list <- c()
   n <- links_id[i]
   #print(n)
@@ -344,9 +344,6 @@ for(i in 1:length(links_id)){
     node$session_all <- session_list %>% unique %>% paste(collapse = ' ; ')
     #print(nrow(node))
     node_new <- rbind(node_new, node)
-  }
-  else{
-    continue;
   }
 }
 node_new$session_all
