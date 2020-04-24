@@ -18,15 +18,14 @@ options(stringsAsFactors = FALSE)
 files <- list.files('results/')
 files <- files[grepl('tsv$',files)]
 files <- paste0('results/', files)
+
+#currenlty hardcoded because results/ contains both files with Emma & Francesco data 
 file <- files[97]
 
 
 data <- data.frame()
 for(f in files){
   d <- read.csv(file, sep='\t', quote = "", row.names = NULL, stringsAsFactors = FALSE)
-  
-  #test <- d %>% select(video_id) %>% pull %>% nchar
-  #if(FALSE %in% c(test == 11)) next
   
   data <- rbind(data, d)
   
@@ -75,7 +74,7 @@ clean <- function(vector){
   return(vector)
 }
 
-# WARNING
+# WARNING - Not currenlty used
 # Result differ each time it's run!
 get_reco <- function(video_id){
   html <- paste0('https://www.youtube.com/watch?v=',video_id) %>% read_html
@@ -94,11 +93,11 @@ get_reco <- function(video_id){
   watch_next$compactVideoRenderer$videoId[3:20] %>% unique %>% clean %>% return 
 }
 
+#NOT USED
 descr_out <- c("(This channel used to be called MajorPrep, changed as of January 8th, 2020). I make nerdy and occasionally funny videos.")
 
 ##### Make Nodes #####
 nodes <- data.frame() 
-
 # If the script is interrupted, restart the loop where it stopped with this line of code:
 # for(v in video_all[nrow(nodes)+1:length(video_all)]){
 for(v in video_id){
