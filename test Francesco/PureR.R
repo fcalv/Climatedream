@@ -238,8 +238,8 @@ remote_driver$setWindowSize(1920, 1080)
 
 
 # Use your preferred login credentials
-mail <- "."
-password <- "."
+mail <- "annypowell1@gmail.com"
+password <- "r#'8e$hGN'{!D=m"
 
 t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
 while (t) {
