@@ -114,6 +114,7 @@ for(v in video_id){
     #date <- occurence$date_publication
     channel <- occurence$X.Channel.
     views <- occurence$X.VIEW_CNT.
+    InSessionIndex <- occurence$X.InSessionIndex.
     #duration <- occurence$duration
     
   }
@@ -169,6 +170,11 @@ for(v in video_id){
   if(is.na(views)) views <- '0'
   if(views=='') views <- '0'
   
+  if(length(InSessionIndex) == 0) views <- '-1'
+  if(is.null(InSessionIndex)) InSessionIndex <- '-1'
+  if(is.na(InSessionIndex)) InSessionIndex <- '-1'
+  if(InSessionIndex=='') InSessionIndex <- '-1'
+  
   # Format channel_id 
   #if(length(channel_id) == 0) channel_id <- ''
   #if(is.null(channel_id)) channel_id <- ''
@@ -193,10 +199,11 @@ for(v in video_id){
   channel <- channel %>% check_length(1)
   #channel_id <- channel_id %>% check_length(1)
   #duration <- duration %>% check_length(1)
+  InSessionIndex <- InSessionIndex %>% check_length(1)
   
   line <- data.frame(id=v, group=session, radius=views, title=title,
                      description=description, genre=genre,
-                     image=image, channel=channel, views=views, 
+                     image=image, channel=channel, views=views,InSessionIndex=InSessionIndex, 
                      stringsAsFactors = FALSE)
   
   # Bind new data
