@@ -18,12 +18,12 @@ options(stringsAsFactors = FALSE)
 files <- list.files('results/')
 files <- files[grepl('tsv$',files)]
 files <- paste0('results/', files)
-file <- files[93]
+file <- files[97]
 
 
 data <- data.frame()
 for(f in files){
-  d <- read.csv(f, sep='\t', quote = "", row.names = NULL, stringsAsFactors = FALSE)
+  d <- read.csv(file, sep='\t', quote = "", row.names = NULL, stringsAsFactors = FALSE)
   
   #test <- d %>% select(video_id) %>% pull %>% nchar
   #if(FALSE %in% c(test == 11)) next
@@ -119,6 +119,7 @@ for(v in video_id){
     
   }
   else if(nrow(occurence)==0){
+    print("OCCURENCE ROWS IS 0")
     occurence <- data %>% filter(grepl(v, reco_videos_id)) %>% slice(1)
     
     if(nrow(occurence)==0) {
@@ -298,8 +299,8 @@ nrow(nodes)
 c(links$target, links$source) %>% unique %>% length
 
 # Missing nodes
-# links_n <- c(links$target, links$source) %>% unique
-# links_n[! links_n %in% video_all]
+links_n <- c(links$target, links$source) %>% unique
+links_n[! links_n %in% video_id]
 
 # Format nodes
 main_video <- data %>% select(X.VideoID.) %>% pull %>% unique
