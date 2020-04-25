@@ -20,7 +20,7 @@ files <- files[grepl('tsv$',files)]
 files <- paste0('results/', files)
 
 #currenlty hardcoded because results/ contains both files with Emma & Francesco data 
-file <- files[97]
+file <- files[98]
 
 
 data <- data.frame()
