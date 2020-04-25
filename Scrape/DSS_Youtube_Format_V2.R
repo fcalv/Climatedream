@@ -22,7 +22,7 @@ files <- paste0('results/', files)
 # sample <- gsub(' ', '', sample)
 
 data <- data.frame()
-for(f in files[11:13]){
+for(f in files){
   # Select a subset of the session (if relevant)
   # session <- gsub('^results.*results_|_2020.*$', '', f)
   # if(! session %in% sample) next
@@ -382,12 +382,18 @@ links_grp <- links_l4 %>%
 links_grp %>% glimpse
 
 #####  Loop through links: Reduce & Count #####
-link_list <- links_grp$link_id %>% unique
+# link_id_all <- c(links_grp$link_id, links_grp$link_id_rev) %>% unique
+link_list <- c()
+for(i in 1:length(links_grp$link_id)){
+  if(!(links_grp$link_id[i] %in% link_list | links_grp$link_id_rev[i] %in% link_list)){
+    link_list <- c(link_list, links_grp$link_id[i])
+  }
+}
 
 links_all <- data.frame()
 for(l in link_list){
   
-  matching_links <- links_grp %>% filter(link_id == l)
+  matching_links <- links_grp %>% filter(link_id == l | link_id_rev == l)
   
   line <- matching_links %>% filter(type == 'direct') %>% slice(1)
   if(nrow(line) != 1) line <- matching_links %>% filter(type != 'direct') %>% filter(level == 2) %>% slice(1) 
@@ -407,23 +413,22 @@ links_all %>% filter(level < 3) %>% glimpse
 
 # links_all_backup <- links_all
 # links_all_L4_backup <- links_all
-
+# links_all <- links_all_L4_backup
 #####  Loop through sessions: Get all sessions #####
 links_all <- links_all %>% 
-  mutate(session_direct = '')%>% 
+  mutate(session_direct = session)%>% 
   mutate(session_all = session)
 links_all %>% glimpse
 
 for(k in queries){
   print(k)
-  matching_nodes <- nodes_all %>% filter(group == k)
+  matching_nodes <- nodes_all %>% filter(grepl(k, session_direct))
   
   matching_nodes_L2 <- nodes_all %>% filter(grepl(k, session_all))
   
   for(i in 1:nrow(links_all)) {
     if( ( links_all$source[i] %in% matching_nodes$id & links_all$target[i] %in% matching_nodes_L2$id ) | 
         ( links_all$source[i] %in% matching_nodes_L2$id & links_all$target[i] %in% matching_nodes$id ) #| 
-        
         # ( links_all$source[i] %in% matching_nodes_L2$id & links_all$target[i] %in% matching_nodes_L2$id )
         
     ){
@@ -431,6 +436,7 @@ for(k in queries){
       links_all$session_all[i] %>% print
     }
     if( links_all$source[i] %in% matching_nodes$id & links_all$target[i] %in% matching_nodes$id ){
+      links_all$session_all[i] <- paste(links_all$session_all[i], ';', k)
       links_all$session_direct[i] <- paste(links_all$session_direct[i], ';', k)
       links_all$session_direct[i] %>% print
     }
@@ -448,18 +454,21 @@ for(i in 1:nrow(links_all)){
 }
 links_all %>% glimpse
 links_all$session_all %>% unique
+links_all$session_direct %>% unique
 links_all %>% filter(session_all=='') %>% glimpse
+
+links_all %>% filter(grepl('ice age', session_direct)) %>% glimpse
 
 #####################################
 # WRITE JSON
 #####################################
 
 json <- list(nodes = nodes_all, links=links_all %>% filter(level<3))
-json %>% toJSON() %>% write('results_v2_L2_compact.json')
+json %>% toJSON() %>% write('results_v2_L2_test.json')
 
 json <- list(nodes = nodes_all, links=links_all %>% filter(level!=4))
-json %>% toJSON() %>% write('results_v2_L3_compact.json')
+json %>% toJSON() %>% write('results_v2_L3_test.json')
 
 json <- list(nodes = nodes_all, links=links_all)
-json %>% toJSON() %>% write('results_v2_L4_compact.json')
+json %>% toJSON() %>% write('results_v2_L4_test.json')
 
