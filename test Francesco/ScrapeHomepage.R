@@ -15,9 +15,12 @@ scrapeID <- "skept_2_test_rank"
 ######################
 
 cleanText <- function(stringin){
-  stringin <- gsub('\n','',stringin)
-  stringin <- gsub('\r','',stringin)
-  stringin <- gsub('\t','',stringin)
+  stringin <- gsub('\n',' ',stringin)
+  stringin <- gsub('\r',' ',stringin)
+  stringin <- gsub('\t',' ',stringin)
+  if(is.na(stringin)) stringin <- " "
+  if(is.null(stringin)) stringin <- " "
+  if(stringin == "") stringin <- " "
   
   return(stringin)
 }
@@ -71,16 +74,36 @@ scrapeStaticMetadata <- function(link){
   
   thumb <- paste0("https://img.youtube.com/vi/", videoID, "/hqdefault.jpg")
   
-  line <- data.frame(ReccVideoTitle = title,
-                     ReccVideoID = videoID, 
-                     VideoChannel = channel,
-                     VideoChannelID = channelID,
-                     ChannelSubs = subs,
-                     Description = desc,
-                     Likes = likes,
-                     Dislikes = dislikes,
-                     Views = views, 
-                     Thumbnail = thumb)
+  keyw <- html %>% html_node(xpath = '/html/head/meta[4]') %>% html_attr('content')
+  keyw <- cleanText(keyw)
+  
+  cat <- html %>% html_node(xpath = '//*[@id="watch7-content"]/meta[16]') %>% html_attr('content')
+  cat <- cleanText(cat)
+  
+  famfr <- html %>% html_node(xpath = '//*[@id="watch7-content"]/meta[11]') %>% html_attr('content')
+  famfr <- cleanText(famfr)
+  
+  pub <- html %>% html_node(xpath = '//*[@id="watch7-content"]/meta[14]') %>% html_attr('content')
+  pub <- cleanText(pub)
+  
+  paid <- html %>% html_node('meta[itemprop="paid"]') %>%  html_attr("content")
+  paid <- cleanText(paid)
+  
+  line <- data.frame(Title = title,
+                     VideoID = videoID, 
+                     Channel = channel,
+                     ChannelID = channelID,
+                     SUB_CNT = subs,
+                     Descript = desc,
+                     LIKE_CNT = likes,
+                     DISLIKES_CNT = dislikes,
+                     VIEW_CNT = views, 
+                     Thumbnail = thumb,
+                     Keyword = keyw,
+                     Category = cat,
+                     Fam_friendly = famfr,
+                     Monetized = paid,
+                     Published = pub)
   return(line)
 }
 
@@ -107,8 +130,8 @@ remote_driver$setWindowSize(1920, 1080)
 
 
 # Use your preferred login credentials
-mail <- "."
-password <- "."
+mail <- "annypowell1@gmail.com"
+password <- "r#'8e$hGN'{!D=m"
 
 t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
 while (t) {
@@ -151,10 +174,23 @@ Sys.sleep(5)
 #####################
 
 #initialize empty dataframe
-metadata <- data.frame(ReccVideoTitle = character(), ReccVideoID = character(), VideoChannel = character(), VideoChannelID = character(), ChannelSubs = integer(), Description = character(), Likes = integer(), Dislikes = integer(), Views = integer(), Thumbnail = character(), Rank = integer())
+metadata <- data.frame(Title = character(),
+                       VideoID = character(), 
+                       Channel = character(),
+                       ChannelID = character(),
+                       SUB_CNT = numeric(),
+                       Descript = character(),
+                       LIKE_CNT = numeric(),
+                       DISLIKES_CNT = numeric(),
+                       VIEW_CNT = numeric(), 
+                       Thumbnail = character(),
+                       Keyword = character(),
+                       Category = character(),
+                       Fam_friendly = character(),
+                       Monetized = character(),
+                       Published = character())
 #create tsv file
 csvfile <- paste0('results/homepage_recc_',gsub(' ','',scrapeID),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
-metadata %>% write.table(file = csvfile,sep = '\t')
 
 #number of videos to scrape (use multiples of 10 for now)
 N <- 100
@@ -174,12 +210,11 @@ while (nrow(metadata) < N) {
   for(row in 1:length(links)){
     line <- scrapeStaticMetadata(links[row])
     
-    if(line$ReccVideoTitle=="YouTube") line <- scrapeStaticMetadata(links[row])
+    if(line$Title=="YouTube") line <- scrapeStaticMetadata(links[row])
     
     line$Rank=row
     
     metadata <- rbind(metadata,line)
-    line %>% write.table(file = csvfile,sep = '\t',append = T,row.names = F,col.names = F)
     
     print(paste("Video ", row))
   }
@@ -195,7 +230,9 @@ while (nrow(metadata) < N) {
 remote_driver$closeall()
 driver$server$stop()
 
-read.table(csvfile,header = T) %>% glimpse()
+write.table(csvfile,x = metadata,sep = "\t",row.names = F)
+
+read.delim(csvfile,sep = '\t',fill = F,quote = "") %>% glimpse()
 
 
 ###################
