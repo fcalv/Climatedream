@@ -316,63 +316,63 @@ nodes$id %>% unique %>% length
 links_l2 <- links
 
 #####################################
-# MAKE LINKS - LEVEL 3-4
-#####################################
-#####  Loop through sessions #####
-links_l4 <- links
-for(k in queries){
-  print(k)
-  
-  d <- data %>% filter(keyword_ref == k)
-
-  for(i in 1:nrow(d)){
-    src <- d %>% slice(i)
-
-    # Recommendation links
-    reco <- src$reco_videos_id %>% str_split(' *; *') %>% unlist
-    reco <- gsub('^.*=','', reco) %>% unique %>% clean
-
-    ### Next level of recommendation links
-    for(r in reco){
-      reco_l2 <- get_reco(r)
-      
-      for(r2 in reco_l2){
-        print('L2')
-        print(r2)
-        
-        # Level 3
-        match <- nodes$id[nodes$id==r2] 
-        print('L3')
-        print(match)
-        for(m in match){
-          line <- data.frame(source=r, target=r2, 
-                             session=k, rank=i, 
-                             type='recommendation', level=3, value=1)
-          links_l4 <- rbind(links_l4, line)
-          print(line)
-        }
-          
-        # Level 4
-        match <- reco_videos_all[reco_videos_all==r2]
-        print('L4')
-        print(match)
-        for(m in match){
-          line <- data.frame(source=r, target=r2,
-                             session=k, rank=i,
-                             type='recommendation', level=4, value=1)
-          links_l4 <- rbind(links_l4, line)
-          print(line)
-        }
-      }
-    }
-  }
-}
-#####  Check number of nodes #####  
-length(video_all) 
-nrow(nodes)
-c(links_l4$target, links_l4$source) %>% unique %>% length
-nodes$id %>% unique %>% length
-
+# !! NEEDS REWORK !! MAKE LINKS - LEVEL 3-4
+# #####################################
+# #####  Loop through sessions #####
+# links_l4 <- links
+# for(k in queries){
+#   print(k)
+#   
+#   d <- data %>% filter(keyword_ref == k)
+# 
+#   for(i in 1:nrow(d)){
+#     src <- d %>% slice(i)
+# 
+#     # Recommendation links
+#     reco <- src$reco_videos_id %>% str_split(' *; *') %>% unlist
+#     reco <- gsub('^.*=','', reco) %>% unique %>% clean
+# 
+#     ### Next level of recommendation links
+#     for(r in reco){
+#       reco_l2 <- get_reco(r)
+#       
+#       for(r2 in reco_l2){
+#         print('L2')
+#         print(r2)
+#         
+#         # Level 3
+#         match <- nodes$id[nodes$id==r2] 
+#         print('L3')
+#         print(match)
+#         for(m in match){
+#           line <- data.frame(source=r, target=r2, 
+#                              session=k, rank=i, 
+#                              type='recommendation', level=3, value=1)
+#           links_l4 <- rbind(links_l4, line)
+#           print(line)
+#         }
+#           
+#         # Level 4
+#         match <- reco_videos_all[reco_videos_all==r2]
+#         print('L4')
+#         print(match)
+#         for(m in match){
+#           line <- data.frame(source=r, target=r2,
+#                              session=k, rank=i,
+#                              type='recommendation', level=4, value=1)
+#           links_l4 <- rbind(links_l4, line)
+#           print(line)
+#         }
+#       }
+#     }
+#   }
+# }
+# #####  Check number of nodes #####  
+# length(video_all) 
+# nrow(nodes)
+# c(links_l4$target, links_l4$source) %>% unique %>% length
+# nodes$id %>% unique %>% length
+# 
 #####################################
 # WRITE JSON
 #####################################
