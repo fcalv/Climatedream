@@ -103,12 +103,14 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
   
   occurence <- data %>% filter(video_id == v) # %>% slice(1)
   occurence_reco <- data %>% filter(grepl(v, reco_videos_id)) # %>% slice(1)
+  n_occ <- nrow(occurence) + nrow(occurence_reco)
   
   # Watched
   if(nrow(occurence)!=0){
     session <- occurence$keyword_ref[1]
     session_direct <- occurence$keyword_ref %>% paste(collapse = ';')
-    session_all <- c(occurence$keyword_ref,occurence_reco$keyword_ref) %>% paste(collapse = ';') 
+    session_all <- c(occurence$keyword_ref) %>% paste(collapse = ';') 
+    session_from_reco <- c(occurence_reco$keyword_ref, occurence$keyword_ref) %>% paste(collapse = ';') 
     group <- occurence$keyword_ref[1]
     title <- occurence$title[1]
     description <- occurence$description[1]
@@ -124,6 +126,7 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
     session <- occurence_reco$keyword_ref[1]
     session_direct <- ''
     session_all <- occurence_reco$keyword_ref %>% paste(collapse = ';')
+    session_from_reco <- ''
     group <- 'recommendation'
     
     # Scrape video info 
@@ -183,13 +186,16 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
   channel_id <- channel_id %>% check_length(1)
   duration <- duration %>% check_length(1)
   
-  line <- data.frame(id=v, session=session, session_direct=session_direct, session_all=session_all, group=group, title=title,
+  line <- data.frame(id=v, session=session, 
+                     session_direct=session_direct, session_all=session_all, session_from_reco=session_from_reco, 
+                     group=group, title=title,
                      description=description, keywords=keywords, genre=genre,
                      date=date, channel=channel, channel_id=channel_id, views=views, 
-                     duration=duration)
+                     duration=duration, n_occ=n_occ)
   
   # Bind new data
   nodes <- rbind(nodes, line)
+  print(line)
 }
 
 
@@ -200,6 +206,23 @@ nodes <- nodes %>%
   mutate(views = as.numeric(views))
 
 nodes %>% glimpse
+
+#####  Session lists with unique labels ##### 
+for(i in 1:nrow(nodes)){
+  sessions <- nodes$session_all[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
+  nodes$session_n[i] <- sessions %>% length
+  nodes$session_all[i] <- sessions %>% paste(collapse=';') 
+  sessions <- nodes$session_direct[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
+  nodes$session_direct[i] <- sessions %>% paste(collapse=';') 
+  sessions <- nodes$session_from_reco[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
+  nodes$session_from_reco[i] <- sessions %>% paste(collapse=';') 
+}
+nodes %>% glimpse
+nodes$session_all %>% unique
+nodes$session_direct %>% unique
+nodes %>% filter(session_direct=='') %>% glimpse
+
+
 
 #####  Check number of nodes #####
 # Verify number of nodes/videos is consistent
@@ -222,11 +245,25 @@ for(k in queries){
     if(i != 1){
       src <- d %>% slice(i-1)
       if(!is.na(src$video_id)) {
-        line <- data.frame(source=src$video_id, target=tar$video_id, 
-                           session=k, rank=(i-1), 
-                           type='direct', level=1, value=1)
-        links <- rbind(links, line)
-        print(line)
+        new_link_id <- paste(src$video_id, tar$video_id)
+        
+        if(links %>% filter(link_id==new_link_id) %>% nrow == 0){
+          line <- data.frame(source=src$video_id, target=tar$video_id, 
+                             session=k, rank=(i-1),
+                             session_direct=k, session_all=k, session_n=1,
+                             type='direct', level=1, value=1, n_occ=1,
+                             link_id=link_id)
+          links <- rbind(links, line)
+          print(line)
+        } else {
+          links <- links %>% mutate(session_direct = if_else(
+            link_id==link_id, paste0(session_direct,';',k), session_direct
+          )) %>% mutate(session_all = if_else(
+            link_id==link_id, paste0(session_all,';',k), session_all
+          )) %>% 
+            mutate(n_occ = if_else(link_id==link_id, n_occ + 1, n_occ)) %>% 
+            mutate(type = if_else(link_id==link_id, 'direct', type))
+        }
       }
     } 
     
@@ -235,18 +272,42 @@ for(k in queries){
     reco <- gsub('^.*=','', reco) %>% clean %>% unique 
     
     for(r in reco){
-      if(is.na(r)) next
-      line <- data.frame(source=tar$video_id, target=r, 
-                         session=k, rank=i, 
-                         type='recommendation', level=2, value=1)
-      links <- rbind(links, line)
-      print(line)
+      new_link_id <- paste(tar$video_id, r)
+      
+      if(links %>% filter(link_id==new_link_id) %>% nrow == 0){
+        line <- data.frame(source=tar$video_id, target=r, 
+                           session=k, rank=i, 
+                           session_direct=k, session_all=k, session_n=1,
+                           type='recommendation', level=2, value=1, n_occ=1,
+                           link_id=link_id)
+        links <- rbind(links, line)
+        print(line)
+      } else {
+        links <- links %>% 
+          mutate(session_all = if_else(
+            link_id==link_id, paste0(session_all,';',k), session_all )) %>% 
+          mutate(n_occ = if_else(link_id==link_id, n_occ + 1, n_occ))
+      }
     }
   }
 }
 links %>% glimpse
 
-#####  Check number of nodes #####  
+#####  Session lists with unique labels ##### 
+for(i in 1:nrow(links_all)){
+  sessions <- links_all$session_all[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
+  links_all$session_n[i] <- sessions %>% length
+  links_all$session_all[i] <- sessions %>% paste(collapse=';') 
+  sessions <- links_all$session_direct[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
+  links_all$session_direct[i] <- sessions %>% paste(collapse=';') 
+}
+links_all %>% glimpse
+links_all$session_all %>% unique
+links_all$session_direct %>% unique
+links_all %>% filter(session_all=='') %>% glimpse
+
+
+#####  Check number of nodes ##### 
 length(video_all) 
 nrow(nodes)
 c(links$target, links$source) %>% unique %>% length
@@ -313,162 +374,15 @@ c(links_l4$target, links_l4$source) %>% unique %>% length
 nodes$id %>% unique %>% length
 
 #####################################
-# NODES WITH ALL SESSIONS & No. OCCURENCE
-#####################################
-#####  Loop through nodes #####
-video_id_list <- c(links$source, links$target) %>% unique
-
-nodes <-nodes %>% mutate(session_all='') %>% mutate(session_n=0) 
-
-nodes_all <- data.frame()
-for(n in video_id_list){
-  
-  # Get the info of video n
-  node <- nodes %>% filter(id == n)
-  
-  # Get all links pointing to video n
-  link <- links %>% filter(source == n | target == n)
-  # Get all nodes linked to video n (incl. video n)
-  link_nodes <- c(link$source, link$target) %>% unique
-  
-  # Get the info of nodes linked to video n
-  link_nodes_info <- nodes %>% filter(id %in% link_nodes)
-  # Get the sessions of these nodes (incl. the session of video n)
-  session_list <- c(link_nodes_info$session, node$session) %>% unique
-  
-  # Select & Count unique sessions
-  node$session_all <- session_list  %>% paste(collapse = ' ; ')
-  node$session_n <- session_list %>% length
-  
-  # Store nodes in new dataframe
-  nodes_all <- rbind(nodes_all, node)
-}
-
-#####  Format fields #####
-nodes_all <- nodes_all %>% 
-  mutate(title = gsub('<.*>','',title)) %>% 
-  mutate(description = gsub('<.*>','',description))  %>% 
-  mutate(views = as.numeric(views))
-nodes_all %>% glimpse
-
-#####  Check number of nodes #####  
-nodes_all$session_all %>% unique
-nodes_all %>% glimpse
-
-#####################################
 # WRITE JSON
 #####################################
 
-json <- list(nodes = nodes_all, links=links_l4 %>% filter(level!=4))
+json <- list(nodes = nodes, links=links_l2)
+json %>% toJSON() %>% write('results_v2_L2.json')
+
+json <- list(nodes = nodes, links=links_l4 %>% filter(level!=4))
 json %>% toJSON() %>% write('results_v2_L3.json')
 
-json <- list(nodes = nodes_all, links=links_l4)
+json <- list(nodes = nodes, links=links_l4)
 json %>% toJSON() %>% write('results_v2_L4.json')
-
-
-#####################################
-# UNIQUE LINKS WITH ALL SESSIONS & No. OCCURENCE
-#####################################
-#####  Add columns #####
-links_grp <- links_l4 %>% 
-  # filter(level < 4) %>%
-  mutate(session_all = '') %>% 
-  mutate(session_n = 0) %>% 
-  mutate(type_all = type) %>% 
-  mutate(type_n = 1) %>% 
-  mutate(link_id = paste(source, target)) %>% 
-  mutate(link_id_rev = paste(target, source)) %>% 
-  mutate(link_n = 1)
-links_grp %>% glimpse
-
-#####  Loop through links: Reduce & Count #####
-# link_id_all <- c(links_grp$link_id, links_grp$link_id_rev) %>% unique
-link_list <- c()
-for(i in 1:length(links_grp$link_id)){
-  if(!(links_grp$link_id[i] %in% link_list | links_grp$link_id_rev[i] %in% link_list)){
-    link_list <- c(link_list, links_grp$link_id[i])
-  }
-}
-
-links_all <- data.frame()
-for(l in link_list){
-  
-  matching_links <- links_grp %>% filter(link_id == l | link_id_rev == l)
-  
-  line <- matching_links %>% filter(type == 'direct') %>% slice(1)
-  if(nrow(line) != 1) line <- matching_links %>% filter(type != 'direct') %>% filter(level == 2) %>% slice(1) 
-  if(nrow(line) != 1) line <- matching_links %>% filter(type != 'direct') %>% filter(level != 2) %>% slice(1)
-
-  line$link_n <- nrow(matching_links) 
-  
-  line$type_all <- matching_links$type %>% unique %>% paste(collapse=';')
-  line$type_n <- matching_links$type %>% unique %>% length
-  
-  print(line)
-  links_all <- rbind(links_all, line)
-}
-
-links_all %>% glimpse
-links_all %>% filter(level < 3) %>% glimpse
-
-# links_all_backup <- links_all
-# links_all_L4_backup <- links_all
-# links_all <- links_all_L4_backup
-#####  Loop through sessions: Get all sessions #####
-links_all <- links_all %>% 
-  mutate(session_direct = session)%>% 
-  mutate(session_all = session)
-links_all %>% glimpse
-
-for(k in queries){
-  print(k)
-  matching_nodes <- nodes_all %>% filter(grepl(k, session_direct))
-  
-  matching_nodes_L2 <- nodes_all %>% filter(grepl(k, session_all))
-  
-  for(i in 1:nrow(links_all)) {
-    if( ( links_all$source[i] %in% matching_nodes$id & links_all$target[i] %in% matching_nodes_L2$id ) | 
-        ( links_all$source[i] %in% matching_nodes_L2$id & links_all$target[i] %in% matching_nodes$id ) #| 
-        # ( links_all$source[i] %in% matching_nodes_L2$id & links_all$target[i] %in% matching_nodes_L2$id )
-        
-    ){
-      links_all$session_all[i] <- paste(links_all$session_all[i], ';', k)
-      links_all$session_all[i] %>% print
-    }
-    if( links_all$source[i] %in% matching_nodes$id & links_all$target[i] %in% matching_nodes$id ){
-      links_all$session_all[i] <- paste(links_all$session_all[i], ';', k)
-      links_all$session_direct[i] <- paste(links_all$session_direct[i], ';', k)
-      links_all$session_direct[i] %>% print
-    }
-  }
-}
-
-links_all_L4_session_backup <- links_all
-
-for(i in 1:nrow(links_all)){
-  sessions <- links_all$session_all[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
-  links_all$session_n[i] <- sessions %>% length
-  links_all$session_all[i] <- sessions %>% paste(collapse=';') 
-  sessions <- links_all$session_direct[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
-  links_all$session_direct[i] <- sessions %>% paste(collapse=';') 
-}
-links_all %>% glimpse
-links_all$session_all %>% unique
-links_all$session_direct %>% unique
-links_all %>% filter(session_all=='') %>% glimpse
-
-links_all %>% filter(grepl('ice age', session_direct)) %>% glimpse
-
-#####################################
-# WRITE JSON
-#####################################
-
-json <- list(nodes = nodes_all, links=links_all %>% filter(level<3))
-json %>% toJSON() %>% write('results_v2_L2_test.json')
-
-json <- list(nodes = nodes_all, links=links_all %>% filter(level!=4))
-json %>% toJSON() %>% write('results_v2_L3_test.json')
-
-json <- list(nodes = nodes_all, links=links_all)
-json %>% toJSON() %>% write('results_v2_L4_test.json')
 
