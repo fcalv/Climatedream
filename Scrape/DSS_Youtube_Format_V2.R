@@ -14,7 +14,6 @@ options(stringsAsFactors = FALSE)
 #####################################
 # UTILS
 #####################################
-##### Functions ##### 
 check_length <- function(data, len){
   if(length(data) > len) data[1:len] %>% return
   else if(length(data) == len) data %>% return
@@ -32,21 +31,29 @@ clean <- function(vector){
 # WARNING
 # Result differ each time it's run!
 get_reco <- function(video_id){
+  print('get_reco()')
+  print(video_id)
   html <- paste0('https://www.youtube.com/watch?v=',video_id) %>% read_html
   html %>% as.character %>% write('temp.html')
   txt <- readLines('temp.html')
   
   # Find JSON
-  for(i in 1:length(txt)){
-    if(grepl('RELATED_PLAYER_ARGS', txt[i])) {
-      json <- gsub("^ *'RELATED_PLAYER_ARGS': *|,$", '', txt[i]) %>% fromJSON
-      watch_next <- json$watch_next_response %>% fromJSON
-      watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
-      break
+  trial <- 0
+  while(trial < 5){
+    trial <- trial +1
+    watch_next <- NA
+    for(i in 1:length(txt)){
+      if(grepl('RELATED_PLAYER_ARGS', txt[i])) {
+        json <- gsub("^ *'RELATED_PLAYER_ARGS': *|,$", '', txt[i]) %>% fromJSON
+        watch_next <- json$watch_next_response %>% fromJSON
+        watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
+        break
+      }
     }
+    if(!is.na(watch_next)) gsub('^.*watch.*=','', watch_next$compactVideoRenderer$videoId[3:20]) %>% 
+      unique %>% clean %>% return
   }
-  gsub('^.*watch.*=','', watch_next$compactVideoRenderer$videoId[3:20]) %>% 
-    unique %>% clean %>% return 
+  c() %>% return
 }
 
 #####################################
@@ -336,9 +343,9 @@ json %>% toJSON() %>% write('results_v2_L2.json')
 # MAKE LINKS - LEVEL 3-4
 #####################################
 #####  Loop through sessions #####
-direct_video_id <- data$video_id %>% unique
-reco_video_id <- data$reco_videos_id %>% str_split(' *; *') %>% unlist %>% unique
-links_l4 <- links
+direct_video_id <- data$video_id %>% clean %>% unique
+reco_video_id <- data$reco_videos_id %>% str_split(' *; *') %>% unlist %>% clean %>% unique
+links_l4 <- links_l2
 for(k in queries){
   print(k)
 
@@ -354,6 +361,7 @@ for(k in queries){
     ### Next level of recommendation links
     for(r in reco){
       reco_l2 <- get_reco(r)
+      reco_l2 <- gsub('^.*=','', reco_l2) %>% clean %>% unique
 
       for(r2 in reco_l2){
         print('L2')
@@ -363,10 +371,11 @@ for(k in queries){
         match <- direct_video_id[direct_video_id==r2]
         print('L3')
         print(match)
+        
         for(m in match){
           new_link_id <- paste(r, r2)
           
-          if(links %>% filter(link_id==new_link_id) %>% nrow == 0){
+          if(links_l4 %>% filter(link_id==new_link_id) %>% nrow == 0){
             line <- data.frame(source=r, target=r2, 
                                session=k, rank=i,
                                session_direct=k, session_all=k, session_n=1,
@@ -384,13 +393,13 @@ for(k in queries){
         }
 
         # Level 4
-        match <- reco_videos_id[reco_videos_id==r2]
+        match <- reco_video_id[reco_video_id==r2]
         print('L4')
         print(match)
         for(m in match){
           new_link_id <- paste(r, r2)
           
-          if(links %>% filter(link_id==new_link_id) %>% nrow == 0){
+          if(links_l4 %>% filter(link_id==new_link_id) %>% nrow == 0){
             line <- data.frame(source=r, target=r2, 
                                session=k, rank=i,
                                session_direct=k, session_all=k, session_n=1,
@@ -410,6 +419,20 @@ for(k in queries){
     }
   }
 }
+
+#####  Session lists with unique labels ##### 
+for(i in 1:nrow(links_l4)){
+  sessions <- links_l4$session_all[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
+  links_l4$session_n[i] <- sessions %>% length
+  links_l4$session_all[i] <- sessions %>% paste(collapse=';') 
+  sessions <- links_l4$session_direct[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
+  links_l4$session_direct[i] <- sessions %>% paste(collapse=';') 
+}
+links_l4 %>% glimpse
+links_l4$session_all %>% unique
+links_l4$session_direct %>% unique
+links_l4 %>% filter(session_all=='') %>% glimpse
+
 #####  Check number of nodes #####
 length(video_all)
 nrow(nodes)
