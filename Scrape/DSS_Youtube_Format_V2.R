@@ -270,9 +270,7 @@ for(k in queries){
         }
       }
       # Add session labels to links of all types
-      links_l2 <- links_l2 %>% mutate(session_direct = if_else(
-        link_id==new_link_id, paste0(session_direct,';',k), session_direct
-      )) %>% mutate(session_all = if_else(
+      links_l2 <- links_l2 %>% mutate(session_all = if_else(
         link_id==new_link_id, paste0(session_all,';',k), session_all
       )) %>% 
       mutate(n_occ = if_else(link_id==new_link_id, n_occ + 1, n_occ))
@@ -296,7 +294,7 @@ for(k in queries){
       } else {
         links_l2 <- links_l2 %>% 
           mutate(session_direct = if_else(
-            link_id==new_link_id, paste0(session_all,';',k), session_all )) %>% 
+            link_id==new_link_id &  level==2, paste0(session_direct,';',k), session_direct )) %>% 
           mutate(session_all = if_else(
             link_id==new_link_id, paste0(session_all,';',k), session_all )) %>% 
           mutate(n_occ = if_else(link_id==new_link_id, n_occ + 1, n_occ))
