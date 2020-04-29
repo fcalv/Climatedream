@@ -439,12 +439,11 @@ nrow(nodes)
 c(links_l4$target, links_l4$source) %>% unique %>% length
 nodes$id %>% unique %>% length
 
+links_l4 %>% filter(level>2) %>% glimpse
+
 #####################################
 # WRITE JSON
 #####################################
-
-json <- list(nodes = nodes, links=links_l2)
-json %>% toJSON() %>% write('results_v2_L2.json')
 
 json <- list(nodes = nodes, links=links_l4 %>% filter(level!=4))
 json %>% toJSON() %>% write('results_v2_L3.json')
