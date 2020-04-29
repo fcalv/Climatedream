@@ -46,22 +46,30 @@ get_json <- function(html){
 }
 
 # WARNING - Recommendations differ each time it's run!
-get_reco <- function(html){
-  # html <- paste0('https://www.youtube.com/watch?v=',video_id) %>% read_html
+get_reco <- function(video_id){
+  print('get_reco()')
+  print(video_id)
+  html <- paste0('https://www.youtube.com/watch?v=',video_id) %>% read_html
   html %>% as.character %>% write('temp.html')
   txt <- readLines('temp.html')
   
   # Find JSON
-  for(i in 1:length(txt)){
-    if(grepl('RELATED_PLAYER_ARGS', txt[i])) {
-      json <- gsub("^ *'RELATED_PLAYER_ARGS': *|,$", '', txt[i]) %>% fromJSON
-      rvs <- json$rvs %>% fromJSON
-      watch_next <- json$watch_next_response %>% fromJSON
-      watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
-      break
+  trial <- 0
+  while(trial < 5){
+    trial <- trial +1
+    watch_next <- NA
+    for(i in 1:length(txt)){
+      if(grepl('RELATED_PLAYER_ARGS', txt[i])) {
+        json <- gsub("^ *'RELATED_PLAYER_ARGS': *|,$", '', txt[i]) %>% fromJSON
+        watch_next <- json$watch_next_response %>% fromJSON
+        watch_next <- watch_next$contents$twoColumnWatchNextResults$secondaryResults$secondaryResults$results
+        break
+      }
     }
+    if(!is.na(watch_next)) gsub('^.*watch.*=','', watch_next$compactVideoRenderer$videoId[3:20]) %>% 
+      unique %>% clean %>% return
   }
-  watch_next$compactVideoRenderer$videoId[3:20] %>% unique %>% clean %>% return 
+  c() %>% return
 }
 
 scrape_page <- function(video_id, html, csv_file, keyword_ref, iteration){
