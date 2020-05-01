@@ -136,7 +136,9 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
     group <- 'recommendation'
     
     # Scrape video info 
-    html <- paste0('https://www.youtube.com/watch?v=', v) %>% read_html
+    url_video <- paste0('https://www.youtube.com/watch?v=', v)
+    if(! url.exists(url_video)) next
+    html <- url_video %>% read_html
     
     title <- html %>% html_nodes('meta[name=title]') %>% html_attr('content')
     title <- gsub('\t','',title)
@@ -173,11 +175,17 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
   if(is.null(channel_id)) channel_id <- ''
   if(is.na(channel_id)) channel_id <- ''
   
+  print(channel_id)
   # Get channel name
-  if(nchar(channel_id) > 17){
-    channel_url <- paste0('https://www.youtube.com/channel/', channel_id)
-    channel <- read_html(channel_url) %>% html_nodes('meta[name=title]') %>% html_attr('content')
-    channel <- gsub('\t','',channel)
+  if(nchar(channel_id) == 24){
+    channel_url <- paste0('https://www.youtube.com/channel/PT2M31S', channel_id)
+    if(! url.exists(channel_url)) {
+      paste('Channel 404\t',channel_url) %>% print
+      channel <- ''
+    } else {
+      channel <- read_html(channel_url) %>% html_nodes('meta[name=title]') %>% html_attr('content')
+      channel <- gsub('\t','',channel)
+    }
   } else {
     channel <- ''
   }

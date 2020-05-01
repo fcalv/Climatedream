@@ -19,6 +19,23 @@ options(stringsAsFactors = FALSE)
 port <- run_phantomjs()
 
 #####################################
+# UTILS
+#####################################
+check_length <- function(data, len){
+  if(length(data) > len) data[1:len] %>% return
+  else if(length(data) == len) data %>% return
+  else if(length(data) < len) c(data, rep('', len-length(data))) %>% return
+  else rep('', len) %>% return
+}
+clean <- function(vector){
+  vector <- vector[!is.null(vector)]
+  vector <- vector[!is.na(vector)]
+  vector <- vector[vector!='NA']
+  vector <- vector[vector!='']
+  return(vector)
+}
+
+#####################################
 # SCRAPE FUNCTION
 #####################################
 
@@ -203,6 +220,7 @@ for (row in 1:length(Top100GlobalWarming$bigram)){
   timer <- Sys.time()
   driver <- rsDriver(browser = c("chrome"), port=port$port, chromever="80.0.3987.106")
   remote_driver <- driver[["client"]]
+  remote_driver$deleteAllCookies()
   
   ##### GET KEYWORDS #####
   statement <- Top100GlobalWarming$bigram[row]
@@ -222,14 +240,10 @@ for (row in 1:length(Top100GlobalWarming$bigram)){
   
   
   ##### INIT SESSION #####
-  # Refresh youtube and clear all cookies
-  remote_driver$navigate("https://www.youtube.com/")
-  remote_driver$deleteAllCookies()
   remote_driver$navigate("https://www.youtube.com/")
   Sys.sleep(1)
   
   ##### RECORD HTML #####
-  # remote_driver$switchToFrame(NULL)
   src <- XML::htmlParse(remote_driver$getPageSource()[[1]])
   saveXML(src, paste0('results/scrape_html_',gsub(' ','-',statement),'_HOME_',gsub('[^0-9]','_',Sys.time()),'.html') )
   

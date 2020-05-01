@@ -160,33 +160,38 @@ scrape_page <- function(html_selenium, csv_file, keyword_ref, iteration, html_rv
 # SEARCH QUERIES
 #####################################
 
-search_qeries <- read.csv("Top100GlobalWarming.csv", header=TRUE, sep=";") %>%
-  unite(bigram, word1, word2, sep = " ")
-search_qeries <- search_qeries$bigram
+# search_qeries <- read.csv("Top100GlobalWarming.csv", header=TRUE, sep=";") %>%
+#   unite(bigram, word1, word2, sep = " ")
+# search_qeries <- search_qeries$bigram
+
+# search_qeries <- c("al gore", "anthropogenic climate", "atmospheric co2", "climate science", "co2 emissions", "co2 levels", "global climate", "global cooling", "global temperature", "global warming", "greenhouse gases", "ice age", "industrial revolution", "oil companies", "patrick moore", "scientific method", "sea level")
+search_qeries <- c("anthropogenic climate", "atmospheric co2", "global climate", "industrial revolution", "patrick moore", "scientific method")
 
 #####################################
 # SCRAPE IN ACTION
 #####################################
+##### START SELENIUM DRIVER #####
+# Find port by running run_phantomjs()
+# port <- run_phantomjs()$port
+# Alternative:
+# port <- netstat::free_port()
+
+##### START SELENIUM DRIVER #####
+port <- run_phantomjs()$port
+driver <- rsDriver(browser="chrome", port=port, chromever="80.0.3987.106")
+remote_driver <- driver[["client"]]
 
 # TRY KEYWORDS
 for (row in 1:length(search_qeries)){
   timer <- Sys.time()
   
-  ##### START SELENIUM DRIVER #####
-  # Find port by running run_phantomjs()
-  port <- run_phantomjs()$port
-  # Alternative:
-  # port <- netstat::free_port()
-  
-  driver <- rsDriver(browser="chrome", port=port, chromever="80.0.3987.106")
-  remote_driver <- driver[["client"]]
   remote_driver$deleteAllCookies()
   remote_driver$setWindowSize(1920, 1080)
   
   ##### GET KEYWORDS #####
   statement <- search_qeries[row]
   paste('KEYWORD:', statement) %>% print
-  
+
   ##### INIT CSV RESULT S####
   csv_header <- c("keyword_ref", "iteration", 
                   "video_id", "url", "title", "description", "keywords", "image", "type", "paid", "channel_id", 
@@ -314,13 +319,17 @@ for (row in 1:length(search_qeries)){
   }
 
   ##### CLOSE SELENIUM DRIVER #####
-  remote_driver$close()
-  driver$server$stop()
+  # remote_driver$close()
+  # driver$server$stop()
   
   ##### (abort lagging sessions)  #####
-  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6 ) {
+  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 12 ) {
     print("Timer has expired")
     break
   }
   
 }
+
+##### CLOSE SELENIUM DRIVER #####
+remote_driver$close()
+driver$server$stop()
