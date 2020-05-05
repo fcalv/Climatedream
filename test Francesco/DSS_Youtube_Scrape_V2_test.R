@@ -321,8 +321,10 @@ for (row in 5:length(search_qeries)){
   #driver$server$stop()
   
   ##### (abort lagging sessions)  #####
-  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 2 ) {
+  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6) {
     print("Timer has expired")
+    remote_driver$close()
+    driver$server$stop()
     break
   }
   
