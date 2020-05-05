@@ -182,9 +182,12 @@ driver <- rsDriver(browser="chrome", port=port, chromever="80.0.3987.106")
 remote_driver <- driver[["client"]]
 remote_driver$deleteAllCookies()
 remote_driver$setWindowSize(1920, 1080)
+video_count <- 0
 
 # TRY KEYWORDS
 for (row in 5:length(search_qeries)){
+  
+  video_count <- video_count + 1
   
   ##### GET KEYWORDS #####
   statement <- search_qeries[row]
@@ -233,8 +236,9 @@ for (row in 5:length(search_qeries)){
   ##### FOLLOW RECOMMENDATIONS 20 TIMES #####
   n_scrape = 4
   for(count in 1:n_scrape){ 
+    video_count <- video_count + 1
     ##### Init #####
-    paste('Iteration', count) %>% print
+    paste('Iteration', video_count) %>% print
     
     start_url <- remote_driver$getCurrentUrl()[[1]] 
     start_url %>% print
@@ -265,7 +269,7 @@ for (row in 5:length(search_qeries)){
     html_rvest %>% as.character %>% write(html_src_rvest)
     
     ##### SCRAPE DATA #####
-    next_videos <- scrape_page(html_selenium, csv_file, statement, count, html_rvest, start_url)
+    next_videos <- scrape_page(html_selenium, csv_file, statement, video_count, html_rvest, start_url)
     
     ##### WATCH #####
     # Click play
