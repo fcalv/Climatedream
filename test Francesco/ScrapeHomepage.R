@@ -111,14 +111,14 @@ scrapeStaticMetadata <- function(link){
 ##### START CLIENT #####
 ########################
 
-fport <- netstat::free_port()
-driver <- rsDriver(browser = c("chrome"), port=fport, chromever="80.0.3987.106")
+#fport <- netstat::free_port()
+#driver <- rsDriver(browser = c("chrome"), port=fport, chromever="80.0.3987.106")
 #driver <- rsDriver(browser = c("chrome"), port=fport, chromever="80.0.3987.16")
 
 
-remote_driver <- driver[["client"]] 
+#remote_driver <- driver[["client"]] 
 
-remote_driver$deleteAllCookies()
+#remote_driver$deleteAllCookies()
 
 
 #######################################
@@ -130,41 +130,41 @@ remote_driver$setWindowSize(1920, 1080)
 
 
 # Use your preferred login credentials
-mail <- "annypowell1@gmail.com"
-password <- "r#'8e$hGN'{!D=m"
-
-t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
-while (t) {
-  print("Zzzzzz...")
-  Sys.sleep(1)
-  
-  t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
-}
-
-btn <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button")
-btn$clickElement()
-
-t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
-while (t) {
-  print("Zzzzzz...")
-  Sys.sleep(1)
-  
-  t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
-}
-
-btn <- remote_driver$findElement(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div/div[1]/div/div[1]/input")
-btn$sendKeysToElement(list(mail, key = "enter"))
-
-t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
-while (t) {
-  print("Zzzzzz...")
-  Sys.sleep(1)
-  
-  t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
-}
-
-btn <- remote_driver$findElement(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[1]/input")
-btn$sendKeysToElement(list(password, key = "enter"))
+# mail <- "annypowell1@gmail.com"
+# password <- "r#'8e$hGN'{!D=m"
+# 
+# t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
+# while (t) {
+#   print("Zzzzzz...")
+#   Sys.sleep(1)
+#   
+#   t <- remote_driver$findElements(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button") %>% unlist() %>% is.null()
+# }
+# 
+# btn <- remote_driver$findElement(using = "xpath",value = "/html/body/ytd-app/div/div/ytd-masthead/div[3]/div[3]/div[2]/ytd-button-renderer/a/paper-button")
+# btn$clickElement()
+# 
+# t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
+# while (t) {
+#   print("Zzzzzz...")
+#   Sys.sleep(1)
+#   
+#   t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
+# }
+# 
+# btn <- remote_driver$findElement(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div/div[1]/div/div[1]/input")
+# btn$sendKeysToElement(list(mail, key = "enter"))
+# 
+# t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
+# while (t) {
+#   print("Zzzzzz...")
+#   Sys.sleep(1)
+#   
+#   t <- remote_driver$findElements(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[1]/input") %>% unlist() %>% is.null()
+# }
+# 
+# btn <- remote_driver$findElement(using = "xpath",value = "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[1]/input")
+# btn$sendKeysToElement(list(password, key = "enter"))
 
 Sys.sleep(5)
 
@@ -190,7 +190,7 @@ metadata <- data.frame(Title = character(),
                        Monetized = character(),
                        Published = character())
 #create tsv file
-csvfile <- paste0('results/homepage_recc_',gsub(' ','',scrapeID),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
+csvfile <- paste0('testgoogletrends/homepage_recc_',gsub(' ','',scrapeID),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
 
 #number of videos to scrape (use multiples of 10 for now)
 N <- 100
@@ -227,8 +227,8 @@ while (nrow(metadata) < N) {
 #### CLOSE CONNECTION ######
 ############################
 
-remote_driver$closeall()
-driver$server$stop()
+#remote_driver$closeall()
+#driver$server$stop()
 
 write.table(csvfile,x = metadata,sep = "\t",row.names = F)
 
