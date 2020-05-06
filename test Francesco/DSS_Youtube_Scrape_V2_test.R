@@ -14,6 +14,7 @@ library(jsonlite)
 library(netstat)
 library(htmltidy)
 library(netstat)
+library(lubridate)
 # webdriver::install_phantomjs
 
 options(stringsAsFactors = FALSE)
@@ -72,7 +73,18 @@ scrape_page <- function(html_selenium, csv_file, keyword_ref, iteration, html_rv
    
   paid <- html_rvest %>% html_nodes('meta[itemprop="paid"]') %>% html_attr('content')
   channel_id <- html_rvest %>% html_nodes('meta[itemprop="channelId"]') %>% html_attr('content')
+  
   duration <- html_rvest %>% html_nodes('meta[itemprop="duration"]') %>% html_attr('content')
+  duration <- str_remove(duration, 'PT')
+  if(grepl(duration, 'H', fixed = TRUE)){
+    duration <- str_replace_all(duration, c("H" = ":", "M" = ":", S = ":"))
+    duration <- period_to_seconds(hms(duration))
+  }
+  else{
+    duration <- str_replace_all(duration, c("M" = ":", S = ":"))
+    duration <- period_to_seconds(ms(duration))
+  }
+  
   unlisted <- html_rvest %>% html_nodes('meta[itemprop="unlisted"]') %>% html_attr('content')
   family <- html_rvest %>% html_nodes('meta[itemprop="isFamilyFriendly"]') %>% html_attr('content')
   
