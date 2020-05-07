@@ -8,6 +8,7 @@ library(tidyverse)
 library(rvest)
 library(XML)
 library(jsonlite)
+library(RCurl)
 
 options(stringsAsFactors = FALSE)
 
@@ -55,7 +56,35 @@ get_reco <- function(video_id){
   }
   c() %>% return
 }
-
+get_channel_from_id <- function(id_list){
+  res <- c()
+  for(id in id_list){
+    channel <- 'Unknown'
+    url <- paste0('https://www.youtube.com/channel/',id)
+    if(url.exists(url)){ 
+      channel <- url %>% read_html %>% html_nodes('meta[name="title"]') %>% html_attr('content')
+      channel <- gsub('\t','',channel)
+    }
+    res <- c(res, channel)
+    print(channel)
+  }
+  res %>% return
+}
+# 
+# 
+# # Get channel name
+# if(nchar(channel_id) == 24){
+#   channel_url <- paste0('https://www.youtube.com/channel/', channel_id)
+#   if(! url.exists(channel_url)) {
+#     paste('Channel 404\t',channel_url) %>% print
+#     channel <- 'Unknown'
+#   } else {
+#     channel <- read_html(channel_url) %>% html_nodes('meta[name=title]') %>% html_attr('content')
+#     channel <- gsub('\t','',channel)
+#   }
+# } else {
+#   channel <- 'Unknown'
+# }
 #####################################
 # GET DATA
 #####################################
@@ -103,8 +132,8 @@ video_all <- gsub('^.*=','', video_all) %>% clean %>% unique
 nodes <- data.frame() 
 
 # If the script is interrupted, restart the loop where it stopped with this line of code:
-for(v in video_all[nrow(nodes)+1:length(video_all)]){
-# for(v in video_all){
+# for(v in video_all[nrow(nodes)+1:length(video_all)]){
+for(v in video_all){
   print(v)
   
   occurence <- data %>% filter(video_id == v) # %>% slice(1)
@@ -124,6 +153,7 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
     genre <- occurence$genre[1]
     date <- occurence$date_publication[1]
     channel_id <- occurence$channel_id[1]
+    channel <- get_channel_from_id(channel_id)
     views <- occurence$views[1]
     duration <- occurence$duration[1]
     
@@ -137,31 +167,58 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
     
     # Scrape video info 
     url_video <- paste0('https://www.youtube.com/watch?v=', v)
-    if(! url.exists(url_video)) next
-    html <- url_video %>% read_html
-    
-    title <- html %>% html_nodes('meta[name=title]') %>% html_attr('content')
-    title <- gsub('\t','',title)
-    
-    description <- html %>% html_nodes('meta[name=description]') %>% html_attr('content')
-    description <- gsub('\t','',description)
-    
-    keywords <- html %>% html_nodes('meta[name=keywords]') %>% html_attr('content')
-    keywords <- gsub('\t','',keywords)
-    keywords <- gsub(',', ';', keywords)
-    
-    genre <- html %>% html_nodes('meta[itemprop="genre"]') %>% html_attr('content')
-    genre <- gsub(',', ';', genre)
-    
-    date <- html %>% html_nodes('meta[itemprop="datePublished"]') %>% html_attr('content')
-    channel_id <- html %>% html_nodes('meta[itemprop="channelId"]') %>% html_attr('content')
-    views <- html %>% html_nodes('meta[itemprop="interactionCount"]') %>% html_attr('content')
-    duration <- html %>% html_nodes('meta[itemprop="duration"]') %>% html_attr('content')
-  }
+    if(url.exists(url_video)) {
+      html <- url_video %>% read_html
+      
+      title <- html %>% html_nodes('meta[name=title]') %>% html_attr('content')
+      title <- gsub('\t','',title)
+      
+      description <- html %>% html_nodes('meta[name=description]') %>% html_attr('content')
+      description <- gsub('\t','',description)
+      
+      keywords <- html %>% html_nodes('meta[name=keywords]') %>% html_attr('content')
+      keywords <- gsub('\t','',keywords)
+      keywords <- gsub(',', ';', keywords)
+      
+      genre <- html %>% html_nodes('meta[itemprop="genre"]') %>% html_attr('content')
+      genre <- gsub(',', ';', genre)
+      
+      date <- html %>% html_nodes('meta[itemprop="datePublished"]') %>% html_attr('content')
+      channel_id <- html %>% html_nodes('meta[itemprop="channelId"]') %>% html_attr('content')
+      channel <- get_channel_from_id(channel_id)
+      views <- html %>% html_nodes('meta[itemprop="interactionCount"]') %>% html_attr('content')
+      duration <- html %>% html_nodes('meta[itemprop="duration"]') %>% html_attr('content')
+    } else {
+      sample <- occurence_reco %>% slice(1)
+      temp_list <- sample$reco_videos_id %>% str_split(' *; *') %>% unlist 
+      index <- match(v, temp_list)
+      
+      temp_list <- sample$reco_titles %>% str_split(' *; *') %>% unlist 
+      title <- temp_list[index]
+      
+      temp_list <- sample$reco_snippets %>% str_split(' *; *') %>% unlist 
+      description <- temp_list[index]
+      
+      keywords <- genre <- date <- ''
+      
+      temp_list <- sample$reco_channels_id %>% str_split(' *; *') %>% unlist 
+      channel_id <- temp_list[index]
+      
+      temp_list <- sample$reco_channels_name %>% str_split(' *; *') %>% unlist 
+      channel <- temp_list[index]
+      
+      temp_list <- sample$reco_views %>% str_split(' *; *') %>% unlist 
+      views <- temp_list[index]
+      
+      temp_list <- sample$reco_durations %>% str_split(' *; *') %>% unlist 
+      duration <- temp_list[index]
+      
+    }
+  } 
 
-  # Format sessions list
-  session_all <- session_all  %>% str_split(' *; *') %>% unlist %>% clean %>% unique %>% paste(collapse = ';') 
-  if(session_all == '') break
+  # # Format sessions list
+  # session_all <- session_all %>% str_split(' *; *') %>% unlist %>% clean %>% unique %>% paste(collapse = ';') 
+  # if(session_all == '') break
   
   # Format views 
   views <- gsub('[^0-9]','', views)
@@ -174,21 +231,6 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
   if(length(channel_id) == 0) channel_id <- ''
   if(is.null(channel_id)) channel_id <- ''
   if(is.na(channel_id)) channel_id <- ''
-  
-  print(channel_id)
-  # Get channel name
-  if(nchar(channel_id) == 24){
-    channel_url <- paste0('https://www.youtube.com/channel/PT2M31S', channel_id)
-    if(! url.exists(channel_url)) {
-      paste('Channel 404\t',channel_url) %>% print
-      channel <- ''
-    } else {
-      channel <- read_html(channel_url) %>% html_nodes('meta[name=title]') %>% html_attr('content')
-      channel <- gsub('\t','',channel)
-    }
-  } else {
-    channel <- ''
-  }
   
   # Verif fields
   title <- title %>% check_length(1)
@@ -214,8 +256,9 @@ for(v in video_all[nrow(nodes)+1:length(video_all)]){
 
 #####  Format fields #####
 nodes <- nodes %>% 
-  mutate(title = gsub('<.*>','',title)) %>% 
-  mutate(description = gsub('<.*>','',description))  %>% 
+  mutate(title = gsub('<.*>|[^[:graph:]]',' ',title)) %>% 
+  mutate(description = gsub('<.*>|[^[:graph:]]',' ',description))  %>% 
+  mutate(channel = gsub('<.*>|[^[:graph:]]',' ',channel))  %>% 
   mutate(views = as.numeric(views))
 
 nodes %>% glimpse
@@ -230,18 +273,18 @@ for(i in 1:nrow(nodes)){
   sessions <- nodes$session_from_reco[i] %>% str_split(' *; *') %>% unlist %>% unique %>% clean 
   nodes$session_from_reco[i] <- sessions %>% paste(collapse=';') 
 }
+
+
 nodes %>% glimpse
 nodes$session_all %>% unique
 nodes$session_direct %>% unique
 nodes %>% filter(session_direct=='') %>% glimpse
 
-
-
 #####  Check number of nodes #####
 # Verify number of nodes/videos is consistent
 video_all %>% length
 nodes$id %>% unique %>% length
-
+missing <- video_all[!video_all %in% (nodes$id %>% unique)]
 # nodes %>% saveRDS('nodes_backup')
 # nodes <-  readRDS('nodes_backup')
 
@@ -339,12 +382,18 @@ c(links_l2$target, links_l2$source) %>% unique %>% length
 nodes$id %>% unique %>% length
 nodes$session_from_reco %>% unique %>% glimpse
 
+missing <- nodes$id[nodes$id %>% duplicated]
+nodes <- nodes %>% filter(!id %in% missing)
+
 #####################################
 # WRITE JSON
 #####################################
 
 json <- list(nodes = nodes, links=links_l2)
-json %>% toJSON() %>% write('results_v2_L2.json')
+json %>% toJSON() %>% write('results_v2_L2_pureSelenium.json')
+
+# formatted_data <- read_json('results_v2_L2_pureSelenium.json', simplifyVector=TRUE) %>% glimpse
+# formatted_data %>% toJSON()  %>% write('results_v2_L2.json')
 
 # ####################################
 # # MAKE LINKS - LEVEL 3-4
