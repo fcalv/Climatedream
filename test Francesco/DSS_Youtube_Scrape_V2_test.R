@@ -75,15 +75,10 @@ scrape_page <- function(html_selenium, csv_file, keyword_ref, iteration, html_rv
   channel_id <- html_rvest %>% html_nodes('meta[itemprop="channelId"]') %>% html_attr('content')
   
   duration <- html_rvest %>% html_nodes('meta[itemprop="duration"]') %>% html_attr('content')
-  duration <- str_remove(duration, 'PT')
-  if(grepl(duration, 'H', fixed = TRUE)){
-    duration <- str_replace_all(duration, c("H" = ":", "M" = ":", S = ":"))
-    duration <- period_to_seconds(hms(duration))
-  }
-  else{
-    duration <- str_replace_all(duration, c("M" = ":", S = ":"))
-    duration <- period_to_seconds(ms(duration))
-  }
+  #duration <- str_remove(duration, 'PT')
+  #duration <- str_replace_all(duration, c("H" = ":", "M" = ":", S = ":"))
+  #duration <- sapply(duration, function(x) if(nchar(x) > 5){ period_to_seconds(hms(x))}else{period_to_seconds(ms(x))})
+  #duration <- period_to_seconds(hms(duration))
   
   unlisted <- html_rvest %>% html_nodes('meta[itemprop="unlisted"]') %>% html_attr('content')
   family <- html_rvest %>% html_nodes('meta[itemprop="isFamilyFriendly"]') %>% html_attr('content')
@@ -199,8 +194,6 @@ video_count <- 0
 # TRY KEYWORDS
 for (row in 5:length(search_qeries)){
   
-  video_count <- video_count + 1
-  
   ##### GET KEYWORDS #####
   statement <- search_qeries[row]
   paste('KEYWORD:', statement) %>% print
@@ -289,7 +282,7 @@ for (row in 5:length(search_qeries)){
     
     # Timeout for (very) long videos and live streams (stop watching after N seconds), for now 2 min
     tic(gcFirst = T)
-    N <- 1800
+    N <- 20
     
     # watch the video until the end / timer expiry
     state <- 1
@@ -337,7 +330,7 @@ for (row in 5:length(search_qeries)){
   #driver$server$stop()
   
   ##### (abort lagging sessions)  #####
-  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6) {
+  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 1) {
     print("Timer has expired")
     remote_driver$close()
     driver$server$stop()
