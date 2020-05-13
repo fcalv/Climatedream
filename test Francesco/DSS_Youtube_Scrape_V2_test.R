@@ -168,8 +168,8 @@ scrape_page <- function(html_selenium, csv_file, keyword_ref, iteration, html_rv
 # SEARCH QUERIES
 #####################################
 
-search_qeries <- read.csv("Search Queries Climatedream - Google Trends.tsv", header=TRUE, sep="\t")
-search_qeries <- search_qeries$Popular.search.queries
+search_qeries <- read.csv("queries.txt", header=TRUE, sep="\t")
+search_qeries <- search_qeries$Bigram
 
 #####################################
 # SCRAPE IN ACTION
@@ -192,7 +192,7 @@ remote_driver$setWindowSize(1920, 1080)
 video_count <- 0
 
 # TRY KEYWORDS
-for (row in 5:length(search_qeries)){
+for (row in 1:length(search_qeries)){
   
   ##### GET KEYWORDS #####
   statement <- search_qeries[row]
@@ -235,6 +235,14 @@ for (row in 5:length(search_qeries)){
   ##### CLICK ON 1st RECOMMENDATION #####
   remote_driver$findElement(using = "css", ".ytd-video-renderer")$clickElement()
   Sys.sleep(1)
+  
+  if(grepl(remote_driver$getCurrentUrl() %>% unlist(),pattern = "search_query")){
+    print("Still in search query page")
+    
+    Sys.sleep(5)
+    remote_driver$findElement(using = "css",value = '#dismissable')$clickElement()
+    Sys.sleep(1)
+  }
   
   # remote_driver$findElement(using = "css", ".ytd-compact-autoplay-renderer")$clickElement()
   
@@ -282,7 +290,7 @@ for (row in 5:length(search_qeries)){
     
     # Timeout for (very) long videos and live streams (stop watching after N seconds), for now 2 min
     tic(gcFirst = T)
-    N <- 20
+    N <- 1800
     
     # watch the video until the end / timer expiry
     state <- 1
@@ -330,7 +338,7 @@ for (row in 5:length(search_qeries)){
   #driver$server$stop()
   
   ##### (abort lagging sessions)  #####
-  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 1) {
+  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6) {
     print("Timer has expired")
     remote_driver$close()
     driver$server$stop()
