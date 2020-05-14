@@ -15,9 +15,10 @@ options(stringsAsFactors = FALSE)
 #####################################
 # GET DATA
 #####################################
-files <- list.files('results/')
+files <- list.files('testgoogletrends/')
+files <- files[grepl('2020_05_07', files)]
 files <- files[grepl('tsv$',files)]
-files <- paste0('results/', files)
+files <- paste0('testgoogletrends/', files)
 
 #currenlty hardcoded because results/ contains both files with Emma & Francesco data 
 file <- files[98]
@@ -25,7 +26,7 @@ file <- files[98]
 
 data <- data.frame()
 for(f in files){
-  d <- read.csv(file, sep='\t', quote = "", row.names = NULL, stringsAsFactors = FALSE)
+  d <- read.csv(f, sep='\t', quote = "", row.names = NULL, stringsAsFactors = FALSE)
   
   data <- rbind(data, d)
   
@@ -34,6 +35,10 @@ for(f in files){
 
 data %>% glimpse
 
+data <- na.omit(data)
+
+
+write.table(data, file='data.tsv', quote=FALSE, sep='\t', row.names = TRUE)
 
 #####################################
 # MAKE JSON 

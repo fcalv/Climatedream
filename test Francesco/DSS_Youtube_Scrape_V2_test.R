@@ -282,7 +282,7 @@ for (row in 5:length(search_qeries)){
     
     # Timeout for (very) long videos and live streams (stop watching after N seconds), for now 2 min
     tic(gcFirst = T)
-    N <- 20
+    N <- 1800
     
     # watch the video until the end / timer expiry
     state <- 1
@@ -330,7 +330,7 @@ for (row in 5:length(search_qeries)){
   #driver$server$stop()
   
   ##### (abort lagging sessions)  #####
-  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 1) {
+  if (as.numeric(difftime(Sys.time(), timer, units = "hours")) >= 6) {
     print("Timer has expired")
     remote_driver$close()
     driver$server$stop()
