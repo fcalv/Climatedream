@@ -1,0 +1,21 @@
+Bigram	n
+climate change	15928
+global warming	12749
+fossil fuels	3295
+ice age	2047
+climate scientists	2001
+peer reviewed	1784
+sea level	1645
+greenhouse gases	1599
+al gore	1584
+carbon dioxide	1545
+global temperature	1308
+climate science	1248
+co2 levels	987
+patrick moore	805
+greenhouse effect	743
+scientific consensus	742
+co2 emissions	734
+water vapor	624
+oil companies	617
+scientific community	580
