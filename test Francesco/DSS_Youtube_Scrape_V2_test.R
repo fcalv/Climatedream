@@ -168,8 +168,8 @@ scrape_page <- function(html_selenium, csv_file, keyword_ref, iteration, html_rv
 # SEARCH QUERIES
 #####################################
 
-search_qeries <- read.csv("Search Queries Climatedream - Google Trends.tsv", header=TRUE, sep="\t")
-search_qeries <- search_qeries$Popular.search.queries
+search_qeries <- read.csv("queries.txt", header=TRUE, sep="\t")
+search_qeries <- search_qeries$Bigram
 
 #####################################
 # SCRAPE IN ACTION
@@ -192,7 +192,7 @@ remote_driver$setWindowSize(1920, 1080)
 video_count <- 0
 
 # TRY KEYWORDS
-for (row in 5:length(search_qeries)){
+for (row in 1:length(search_qeries)){
   
   ##### GET KEYWORDS #####
   statement <- search_qeries[row]
@@ -205,7 +205,7 @@ for (row in 5:length(search_qeries)){
                   "like", "dislike", "next_video_id", "next_video_url", 
                   "reco_videos_id", "reco_urls", "reco_titles", "reco_channels_id", "reco_channels_name", 
                   "reco_durations", "reco_views", "reco_ages_month", "reco_snippets") %>% paste0(collapse='\t')
-  csv_file <- paste0('testgoogletrends/scrape_results_',
+  csv_file <- paste0('results/scrape_results_',
                      gsub(' ','',statement),'_',gsub('[^0-9]','_',Sys.time()),'.tsv')
   write(csv_header, csv_file)
   
@@ -234,7 +234,15 @@ for (row in 5:length(search_qeries)){
   
   ##### CLICK ON 1st RECOMMENDATION #####
   remote_driver$findElement(using = "css", ".ytd-video-renderer")$clickElement()
-  Sys.sleep(1)
+  Sys.sleep(2)
+  
+  while(grepl(remote_driver$getCurrentUrl() %>% unlist(),pattern = "search_query")){
+    print("Still in search query page")
+    
+    Sys.sleep(5)
+    remote_driver$findElement(using = "css",value = ".ytd-video-renderer")$clickElement()
+    Sys.sleep(2)
+  }
   
   # remote_driver$findElement(using = "css", ".ytd-compact-autoplay-renderer")$clickElement()
   
