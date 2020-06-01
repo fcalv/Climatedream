@@ -19,13 +19,14 @@ files <- list.files('results/')
 files <- files[grepl('tsv$',files)]
 files <- paste0('results/', files)
 
+
 #currenlty hardcoded because results/ contains both files with Emma & Francesco data 
 file <- files[98]
 
 
-data <- data.frame()
+df <- data.frame()
 for(f in files){
-  d <- read.csv(file, sep='\t', quote = "", row.names = NULL, stringsAsFactors = FALSE)
+  d <- read.csv(f, sep='\t', quote = "", row.names = NULL, stringsAsFactors = FALSE)
   
   data <- rbind(data, d)
   
