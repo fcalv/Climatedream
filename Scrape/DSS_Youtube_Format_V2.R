@@ -88,9 +88,9 @@ get_channel_from_id <- function(id_list){
 #####################################
 # GET DATA
 #####################################
-files <- list.files('results/')
+files <- list.files('AnalysisFiles/')
 files <- files[grepl('tsv$',files)]
-files <- paste0('results/', files)
+files <- paste0('AnalysisFiles/', files)
 
 # sample <-  c("al gore", "anthropogenic climate", "atmospheric co2", "climate science", "co2 emissions", "co2 levels", "global climate", "global cooling", "global temperature", "global warming", "greenhouse gases", "ice age", "industrial revolution", "oil companies", "patrick moore", "scientific method", "sea level")
 # sample <- gsub(' ', '', sample)
@@ -122,6 +122,8 @@ video_id <- data$video_id %>% unique
 reco_video_id <- data$reco_videos_id %>% str_split(' *; *') %>% unlist %>% unique
 video_all <- c(video_id, reco_video_id) 
 video_all <- gsub('^.*=','', video_all) %>% clean %>% unique 
+iterations <- data$iteration
+
 
 
 #####################################
@@ -156,10 +158,12 @@ for(v in video_all){
     channel <- get_channel_from_id(channel_id)
     views <- occurence$views[1]
     duration <- occurence$duration[1]
+    iteration <- occurence$iteration
     
   # Not watched  
   } else { 
     session <- occurence_reco$keyword_ref[1]
+    iteration <- occurence_reco$iteration
     session_direct <- ''
     session_all <- occurence_reco$keyword_ref %>% paste(collapse = ';')
     session_from_reco <- ''
@@ -242,7 +246,7 @@ for(v in video_all){
   channel_id <- channel_id %>% check_length(1)
   duration <- duration %>% check_length(1)
   
-  line <- data.frame(id=v, session=session, 
+  line <- data.frame(id=v, session=session, iteration=iteration,
                      session_direct=session_direct, session_all=session_all, session_from_reco=session_from_reco, 
                      group=group, title=title,
                      description=description, keywords=keywords, genre=genre,
@@ -294,6 +298,7 @@ missing <- video_all[!video_all %in% (nodes$id %>% unique)]
 #####  Loop through queries #####
 # links_backup <- links
 # links_l2_backup <- links_l2
+
 links_l2 <- data.frame()
 for(k in queries){
   d <- data %>% filter(keyword_ref == k) %>% arrange(iteration)
@@ -390,7 +395,7 @@ nodes <- nodes %>% filter(!id %in% missing)
 #####################################
 
 json <- list(nodes = nodes, links=links_l2)
-json %>% toJSON() %>% write('results_v2_L2_pureSelenium.json')
+json %>% toJSON() %>% write('results_v2_L2_pureSelenium_16.json')
 
 # formatted_data <- read_json('results_v2_L2_pureSelenium.json', simplifyVector=TRUE) %>% glimpse
 # formatted_data %>% toJSON()  %>% write('results_v2_L2.json')

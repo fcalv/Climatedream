@@ -1,0 +1,10 @@
+1	warming	change	education	kid	know
+2	climate	change	documentary	global	science
+3	video	delen	cameratelefoon	videotelefoon	content
+4	show	daily	video	funny	comedy
+5	greenhouse	energy	solar	food	build
+6	fruit	plant	top	food	garden
+7	news	documentary	world	Documentary	coronavirus
+8	space	science	universe	review	video
+9	science	kid	video	learn	history
+10	talk	tedx	life	TEDx	change
